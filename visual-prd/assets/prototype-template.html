@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    /* 基于业务视觉继续扩展；保留 hidden 的原生隐藏语义。 */
+    [hidden] { display: none !important; }
+    body { margin: 0; color: #172033; background: #f5f7fa; font: 14px/1.5 system-ui, sans-serif; }
+    button, input { font: inherit; }
+    .page { padding: 24px; }
+    .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .panel { margin-top: 18px; padding: 18px; border: 1px solid #dfe3ea; border-radius: 12px; background: #fff; }
+    .dialog { position: fixed; inset: 50% auto auto 50%; width: min(420px, calc(100% - 32px)); padding: 20px; transform: translate(-50%, -50%); border-radius: 12px; background: #fff; box-shadow: 0 24px 80px rgba(23, 32, 51, .24); }
+    .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+  </style>
+</head>
+<body data-anno-page="list">
+  <div id="app"></div>
+  <div id="modal-root"></div>
+  <div id="toast-root"></div>
+
+  <script>
+    // ========== 1. 状态定义 ==========
+    const initialState = {
+      currentPage: 'list',
+      items: [],
+      draft: { title: '' },
+    };
+
+    // ========== 2. 页面定义 ==========
+    const pages = {
+      list: {
+        render: () => `
+          <section class="page" data-page="list">
+            <header class="toolbar" data-anno="template-list">
+              <div><h1>条目列表</h1><p>替换为该板块的真实列表与说明。</p></div>
+              <button type="button" data-action="open-modal:create" data-anno="template-create">新建条目</button>
+            </header>
+            <div class="panel">
+              <button type="button" data-action="navigate:detail" data-params='{"id":"example"}'>查看示例详情</button>
+            </div>
+          </section>`,
+      },
+      detail: {
+        render: () => `
+          <section class="page" data-page="detail" hidden>
+            <button type="button" data-action="navigate:list">返回列表</button>
+            <h1>条目详情</h1>
+          </section>`,
+      },
+    };
+
+    // ========== 3. 弹层定义 ==========
+    const modals = {
+      create: {
+        render: () => `
+          <section class="dialog" data-modal="create" data-modal-type="dialog" data-anno-scope="modal" data-anno-scope-id="template-create" hidden>
+            <h2>新建条目</h2>
+            <form id="create-form" data-form="create-form" data-anno="template-create-form">
+              <label>名称 <input name="title" data-model="draft.title" data-validate="required|min:2"></label>
+              <div class="actions">
+                <button type="button" data-action="close-modal">取消</button>
+                <button type="button" data-action="submit:create-form">确定</button>
+              </div>
+            </form>
+          </section>`,
+      },
+    };
+
+    // ========== 4. Action 处理 ==========
+    const actions = {
+      'submit:create-form': ({ values, state }) => {
+        const newItem = { id: `item-${Date.now()}`, ...values };
+        window.__proto.closeModal();
+        document.querySelector('#toast-root').textContent = `已创建“${values.title}”`;
+        return { items: [...state.items, newItem], draft: { title: '' } };
+      },
+    };
+
+    // ========== 5. 初始 DOM 装配 ==========
+    document.querySelector('#app').innerHTML = Object.values(pages)
+      .map(page => page.render(initialState))
+      .join('');
+    document.querySelector('#modal-root').innerHTML = Object.values(modals)
+      .map(modal => modal.render(initialState))
+      .join('');
+  </script>
+
+  <script src="prototype-runtime.js"></script>
+  <script>
+    // ========== 6. 运行时初始化 ==========
+    const submitHandlers = Object.fromEntries(
+      Object.entries(actions)
+        .filter(([name]) => name.startsWith('submit:'))
+        .map(([name, handler]) => [name.slice('submit:'.length), handler])
+    );
+
+    window.__proto.init({
+      initialState: {
+        ...initialState,
+        route: { pageId: initialState.currentPage, params: {} },
+      },
+      submitHandlers,
+      render: (state) => {
+        document.body.dataset.annoPage = state.route.pageId;
+        requestAnimationFrame(() => window.AnnotationRuntime?.refresh());
+      },
+    });
+  </script>
+
+  <script>/*__ANNOTATION_RUNTIME__*/</script>
+  <script>
+    // ========== 7. 标注初始化 ==========
+    const ANNOTATIONS = __ANNOTATION_DATA__;
+    window.AnnotationRuntime.init({
+      annotations: ANNOTATIONS,
+      pageId: () => window.__proto.state.route.pageId,
+    });
+  </script>
+</body>
+</html>
