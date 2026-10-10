@@ -2,9 +2,9 @@
 
 把产品说明、可交互 HTML 原型和页面标注放在同一个离线网页中，支持本地修改、授权后自动写回 HTML，以及导出供前端继续开发的页面。
 
-**当前版本：2.2.0。** 本仓库提供可复用的 `visual-prd` 技能、容器模板、构建脚本和完整演示。流程图使用可读的 **Mermaid Markdown 源码**：编辑节点和连线，预览时自动生成图，并保留配套的流程文字说明。
+**当前版本：2.2.1。** 本仓库提供可复用的 `visual-prd` 技能、容器模板、构建脚本和完整演示。流程图使用可读的 **Mermaid Markdown 源码**：编辑节点和连线，预览时自动生成图，并保留配套的流程文字说明。
 
-- [下载技能压缩包](dist/visual-prd-2.2.0.zip)
+- [下载技能压缩包](dist/visual-prd-2.2.1.zip)
 - [下载离线演示 HTML](examples/visual-prd-demo.html)（下载到本地后用浏览器打开）
 - [查看技能说明](visual-prd/SKILL.md)
 - [查看流程图示例源码](examples/flows.md)
@@ -112,7 +112,7 @@ keshihua_PRD/
 │   ├── flows.md                    可编辑流程图输入
 │   └── visual-prd-demo.html         已构建的离线演示
 ├── dist/
-│   └── visual-prd-2.2.0.zip         可分发技能压缩包
+│   └── visual-prd-2.2.1.zip         可分发技能压缩包
 └── docs/
     ├── screenshots/                需求参考截图
     └── verification-2.2.md         流程图修改验证记录
@@ -250,7 +250,7 @@ node visual-prd/scripts/check-interactions.js examples/prototype-source.html
 
 # 按 SKILL.md 中的版本生成分发包
 python3 visual-prd/scripts/package-skill.py \
-  --output dist/visual-prd-2.2.0.zip
+  --output dist/visual-prd-2.2.1.zip
 ```
 
 静态检查通过后，还应在真实浏览器中操作导航、弹层、输入、校验、标注编辑和下载。验证磁盘保存时，检查实际文件并从新路径重开，避免只验证了浏览器草稿。
@@ -270,6 +270,8 @@ python3 visual-prd/scripts/package-skill.py \
 **可以装入任意第三方网页吗？** 当前容器会读取原型 DOM 以定位标注，只应装入经检查的当前任务原型。信任边界与移植要求见 [安全与可移植性指南](visual-prd/references/security-and-portability.md)。
 
 ## 版本与依赖
+
+2.2.1 将顶部操作按钮调整为 12 px 字号、32 px 最小高度和 14 px 图标，减少按钮占用空间。
 
 2.2.0 将流程图编辑源改为可读的 Mermaid Markdown，保留文字说明、离线 SVG 预览与授权自动写回；同时保留逐条标注编辑、左右栏开关、单页下载与全部 ZIP 下载能力。
 

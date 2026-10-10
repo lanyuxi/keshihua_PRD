@@ -2,7 +2,7 @@
 name: visual-prd
 description: 生成可视化 PRD，在同一网页容器中同时展示可交互 HTML 原型和需求文档，支持标注文字与图片编辑、授权后自动写回 HTML、流程图 Mermaid Markdown 编辑与离线预览和无标注交互页面下载。当用户要求生成可视化 PRD、带标注的产品方案、或需要将 PRD 与原型同屏展示时使用。
 metadata:
-  version: "2.2.0"
+  version: "2.2.1"
 ---
 
 # Visual PRD
