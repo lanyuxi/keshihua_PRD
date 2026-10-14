@@ -1,0 +1,53 @@
+{
+  "schema_version": "1.0",
+  "id": "product-system",
+  "name": "产品系统界面规范",
+  "tokens": {
+    "colors": {
+      "brand": "#356AE6",
+      "brand_contrast": "#FFFFFF",
+      "ink": "#172033",
+      "muted": "#667085",
+      "line": "#D9DEE8",
+      "surface": "#FFFFFF",
+      "canvas": "#F4F6F9",
+      "nav": "#182033",
+      "nav_text": "#D7DCE8",
+      "nav_active": "#2B3857",
+      "success": "#16845B",
+      "warning": "#B26A00",
+      "danger": "#C03245",
+      "focus": "#356AE6",
+      "backdrop": "rgba(15, 23, 42, 0.46)"
+    },
+    "typography": {
+      "font_family": "system-ui, sans-serif",
+      "base_size": 14,
+      "line_height": 1.5
+    },
+    "radii": {
+      "control": 8,
+      "panel": 12,
+      "overlay": 14
+    },
+    "spacing": {
+      "page": 24,
+      "panel": 20,
+      "control_x": 12,
+      "control_y": 8,
+      "gap": 10
+    },
+    "shadows": {
+      "panel": "soft",
+      "overlay": "strong"
+    }
+  },
+  "components": {
+    "filter": { "variant": "segmented" },
+    "list": { "variant": "table", "density": "compact" },
+    "tabs": { "variant": "underline" },
+    "button": { "size": "medium" },
+    "modal": { "dialog_size": "medium", "drawer_width": 480 }
+  },
+  "page_overrides": {}
+}

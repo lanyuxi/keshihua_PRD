@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "visual-prd-product-model-1.0",
+  "title": "Visual PRD Product Model",
+  "type": "object",
+  "required": ["schema_version", "product", "roles", "modules", "rules", "acceptance_criteria", "requirements", "prototype"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "product": {
+      "type": "object",
+      "required": ["name", "summary", "goal", "platforms", "scope", "exclusions"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "summary": { "type": "string", "minLength": 1 },
+        "goal": { "type": "string", "minLength": 1 },
+        "platforms": { "type": "array", "items": { "type": "string" } },
+        "scope": { "type": "array", "items": { "type": "string" } },
+        "exclusions": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "roles": { "type": "array", "items": { "$ref": "#/$defs/identified" } },
+    "modules": { "type": "array", "items": { "$ref": "#/$defs/identified" } },
+    "rules": { "type": "array", "items": { "$ref": "#/$defs/identified" } },
+    "acceptance_criteria": { "type": "array", "items": { "$ref": "#/$defs/identified" } },
+    "requirements": { "type": "array", "items": { "$ref": "#/$defs/identified" } },
+    "prototype": {
+      "type": "object",
+      "required": ["initial_state", "pages", "modals"],
+      "properties": {
+        "initial_state": { "type": "object" },
+        "pages": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/page" } },
+        "modals": { "type": "array", "items": { "$ref": "#/$defs/modal" } }
+      }
+    },
+    "open_questions": { "type": "array" }
+  },
+  "$defs": {
+    "identified": {
+      "type": "object",
+      "required": ["id"],
+      "properties": { "id": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*$" } }
+    },
+    "action": {
+      "type": "object",
+      "required": ["label", "action"],
+      "properties": {
+        "label": { "type": "string", "minLength": 1 },
+        "action": { "type": "string", "minLength": 1 },
+        "params": { "type": "object" },
+        "style": { "enum": ["primary", "secondary", "ghost", "danger"] },
+        "disabled": { "type": "boolean" }
+      }
+    },
+    "tab": {
+      "type": "object",
+      "required": ["id", "label"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*$" },
+        "label": { "type": "string", "minLength": 1 },
+        "title": { "type": "string" },
+        "content": { "type": "string" }
+      }
+    },
+    "column": {
+      "type": "object",
+      "required": ["key", "label"],
+      "properties": {
+        "key": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*$" },
+        "label": { "type": "string", "minLength": 1 }
+      }
+    },
+    "component": {
+      "type": "object",
+      "required": ["id", "type"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*$" },
+        "type": { "enum": ["hero", "stats", "table", "tabs", "cards", "timeline", "text", "custom"] },
+        "actions": { "type": "array", "items": { "$ref": "#/$defs/action" } },
+        "tabs": { "type": "array", "items": { "$ref": "#/$defs/tab" } },
+        "columns": { "type": "array", "items": { "$ref": "#/$defs/column" } },
+        "rows": { "type": "array", "items": { "type": "object", "required": ["id"] } },
+        "row_action": { "type": "string", "minLength": 1 },
+        "row_params": { "type": "object", "minProperties": 1 }
+      }
+    },
+    "page": {
+      "type": "object",
+      "required": ["id", "title", "components"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*$" },
+        "title": { "type": "string", "minLength": 1 },
+        "components": { "type": "array", "items": { "$ref": "#/$defs/component" } }
+      }
+    },
+    "field": {
+      "type": "object",
+      "required": ["name", "label"],
+      "properties": {
+        "name": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*$" },
+        "label": { "type": "string", "minLength": 1 },
+        "type": { "enum": ["text", "email", "number", "date", "datetime-local", "textarea", "select"] },
+        "required": { "type": "boolean" },
+        "options": { "type": "array", "items": { "type": "object", "required": ["value"] } }
+      }
+    },
+    "submit": {
+      "type": "object",
+      "properties": {
+        "label": { "type": "string" },
+        "success_message": { "type": "string" },
+        "operation": { "enum": ["save", "append"] },
+        "target_list": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*$" },
+        "record": { "type": "object" }
+      }
+    },
+    "modal": {
+      "type": "object",
+      "required": ["id", "page_id", "title", "fields", "submit"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*$" },
+        "page_id": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*$" },
+        "title": { "type": "string", "minLength": 1 },
+        "type": { "enum": ["dialog", "drawer", "popover"] },
+        "fields": { "type": "array", "items": { "$ref": "#/$defs/field" } },
+        "submit": { "$ref": "#/$defs/submit" }
+      }
+    }
+  }
+}

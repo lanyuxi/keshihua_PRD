@@ -14,9 +14,8 @@ from pathlib import Path
 
 SKILL_ROOT = Path(__file__).resolve().parent.parent
 IGNORED_NAMES = {".DS_Store", "Thumbs.db", "desktop.ini"}
-IGNORED_PARTS = {"__pycache__", ".git"}
+IGNORED_PARTS = {"__pycache__", ".git", "releases"}
 NEUTRAL_EXCLUDES = {
-    "agents/" + "o" + "p" + "e" + "n" + "a" + "i" + ".yaml",
     "assets/skill-cover.png",
     "assets/skill-cover-landscape.png",
 }
@@ -35,6 +34,8 @@ def skill_version() -> str:
 
 
 def forbidden_marker(value: str) -> str | None:
+    allowed_attribution = "公众号“" + "A" + "I 翻车现场”的智障研究员"
+    value = value.replace(allowed_attribution, "")
     markers = (
         "o" + "p" + "e" + "n" + "a" + "i",
         "c" + "h" + "a" + "t" + "g" + "p" + "t",
@@ -74,7 +75,7 @@ def validate_neutral_contents(files: list[Path]) -> None:
             raise ValueError(f"Distribution path contains a platform marker: {relative}")
         if path.suffix.lower() not in TEXT_SUFFIXES:
             continue
-        # Preserve the unmodified third-party library, including minified identifiers.
+        # Keep the third-party Mermaid distribution unmodified, including identifiers.
         if relative == "assets/mermaid.min.js":
             continue
         marker = forbidden_marker(path.read_text(encoding="utf-8"))
@@ -104,7 +105,7 @@ def main() -> None:
     parser.add_argument("--output", type=Path, help="Destination zip path")
     args = parser.parse_args()
     version = skill_version()
-    output = (args.output or (SKILL_ROOT.parent / f"{SKILL_ROOT.name}-{version}.zip")).resolve()
+    output = (args.output or (SKILL_ROOT / "releases" / "current" / f"{SKILL_ROOT.name}-{version}.zip")).resolve()
     count, digest = build_archive(output)
     print(f"PASS: packaged {SKILL_ROOT.name} {version} with {count} files to {output}")
     print(f"SHA-256: {digest}")

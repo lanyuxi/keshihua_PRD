@@ -1,1 +1,42 @@
-[{"id": "template-list", "order": 1, "pageId": "list", "title": "列表说明", "body": "展示条目并进入详情页面。", "businessRules": ["支持查看示例详情"], "scope": {"type": "page", "id": "list"}}, {"id": "template-create", "order": 2, "pageId": "list", "title": "创建入口", "body": "点击打开创建表单。", "businessRules": ["名称至少两个字符"], "scope": {"type": "page", "id": "list"}}, {"id": "template-create-form", "order": 1, "pageId": "list", "title": "创建表单", "body": "填写名称并提交，成功后反馈。", "businessRules": ["必填项校验通过后创建"], "scope": {"type": "modal", "id": "template-create"}}]
+[
+  {
+    "id": "task-overview",
+    "order": 1,
+    "pageId": "list",
+    "title": "任务概览",
+    "body": "查看团队任务并快速创建新任务。",
+    "businessRules": [],
+    "scope": {
+      "type": "page",
+      "id": "list"
+    }
+  },
+  {
+    "id": "create-entry",
+    "order": 2,
+    "pageId": "list",
+    "title": "创建入口",
+    "body": "待确认\n验收：负责人填写任务名称后可成功提交。",
+    "businessRules": [
+      "任务名称不能为空。"
+    ],
+    "scope": {
+      "type": "page",
+      "id": "list"
+    }
+  },
+  {
+    "id": "create-form",
+    "order": 1,
+    "pageId": "list",
+    "title": "创建任务表单",
+    "body": "待确认\n验收：负责人填写任务名称后可成功提交。",
+    "businessRules": [
+      "任务名称不能为空。"
+    ],
+    "scope": {
+      "type": "modal",
+      "id": "create"
+    }
+  }
+]

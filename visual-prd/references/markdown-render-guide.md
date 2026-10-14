@@ -21,10 +21,8 @@ PRD 文档区必须支持并在最终 DOM 中验证：GFM 表格、`h1`–`h6`�
 - Markdown 源码在识别语法前先进行 HTML 转义；默认不执行原始 HTML、事件属性或脚本。
 - 链接只允许明确支持的协议，外部链接使用 `rel="noreferrer noopener"`。
 - 编辑区保存原始 Markdown，预览区保存渲染结果；不得把预览 HTML 反写为 Markdown。
-- 输入自动保存到 IndexedDB 草稿；授权后自动写回 HTML。草稿不等于磁盘保存，详见 [编辑与导出指南](editing-and-export.md)。
-- 图片采用 `![说明](data:image/png;base64,...)` 等内嵌 data URI；支持 PNG、JPEG、GIF、WebP 和 SVG 图像。粘贴的位图自动转换为 data URI。原始 HTML 不作为图片编辑方式。
-- `mermaid` 围栏代码块在预览时由内嵌 Mermaid 库渲染为 SVG，编辑与磁盘保存保留原始 Markdown 源码；普通代码块仍显示为代码。
-- Mermaid 初始化使用 `startOnLoad: false` 和 `securityLevel: "strict"`，不执行图中的点击回调或原始脚本；语法错误显示提示和源码，允许继续编辑。渲染过程不请求网络。
+- 编辑输入停止后保存浏览器草稿；用户授权所选 HTML 文件后自动写回磁盘。不能把浏览器缓存成功当作磁盘写回成功；详见 [编辑与导出指南](editing-and-export.md)。
+- 图片粘贴转为内嵌图片 Markdown。流程图使用 `mermaid` 围栏源码，离线渲染为 SVG，源码与配套说明始终保留；不能以 base64 图片代替可编辑流程图源码。
 
 ## 样式要求
 
@@ -46,5 +44,3 @@ PRD 文档区必须支持并在最终 DOM 中验证：GFM 表格、`h1`–`h6`�
 | 行内代码 | 非 `pre` 后代的 `code` |
 | 引用块 | `blockquote` |
 | 分割线 | `hr` |
-
-流程图另检查 `.mermaid-diagram > svg`：修改节点/连线后重新预览，确认图与文字描述一致；语法错误必须保留可恢复的源码。

@@ -1,5 +1,7 @@
 # 原型标注指南
 
+已有 HTML 原型**尚无标注数据或锚点**时，先按 [现有原型从零建立标注](bootstrap-existing.md) 在工作副本中准备两者；本指南说明数据与运行时协议。单纯注入运行时不会产生标注圆点。
+
 ## 目录
 
 - [添加 data-anno 锚点](#添加-data-anno-锚点)
@@ -10,6 +12,21 @@
 - [运行时行为与约束](#运行时行为与约束)
 
 ## 添加 data-anno 锚点
+
+3.0 默认不手写最终标注 JSON：在 `product-model.json` 的页面、组件、操作、表格行、Tab、弹层或字段上声明 `annotation`，由 `scripts/build-annotations.py` 解析规则和验收条件引用，并由 `scripts/build-prototype.py` 在同一节点生成 `data-anno`。只有兼容旧项目或自定义复杂原型时才直接维护下述 HTML 与 JSON。
+
+```json
+"annotation": {
+  "id": "project-create",
+  "order": 2,
+  "scope": { "type": "page", "id": "project-list" },
+  "title": "新建项目入口",
+  "rule_refs": ["RULE-001"],
+  "acceptance_refs": ["AC-001"]
+}
+```
+
+`rule_refs` 与 `acceptance_refs` 只保存引用，不复制正文；引用无法命中时模型校验失败。
 
 在需要标注的真实交互元素上添加 `data-anno="标注 ID"`。该 ID 必须与标注数据中的 `id` 完全一致。
 

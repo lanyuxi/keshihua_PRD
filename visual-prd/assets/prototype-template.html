@@ -39,6 +39,7 @@
             </header>
             <div class="panel">
               <button type="button" data-action="navigate:detail" data-params='{"id":"example"}'>查看示例详情</button>
+              <ul data-rendered-items aria-live="polite"></ul>
             </div>
           </section>`,
       },
@@ -47,6 +48,7 @@
           <section class="page" data-page="detail" hidden>
             <button type="button" data-action="navigate:list">返回列表</button>
             <h1>条目详情</h1>
+            <p data-detail-context></p>
           </section>`,
       },
     };
@@ -104,6 +106,16 @@
       submitHandlers,
       render: (state) => {
         document.body.dataset.annoPage = state.route.pageId;
+        const detail = document.querySelector('[data-detail-context]');
+        if (detail) detail.textContent = state.route.params?.id ? `当前条目：${state.route.params.id}` : '未选择条目';
+        const list = document.querySelector('[data-rendered-items]');
+        if (list) {
+          list.replaceChildren(...state.items.map(item => {
+            const row = document.createElement('li');
+            row.textContent = item.title;
+            return row;
+          }));
+        }
         requestAnimationFrame(() => window.AnnotationRuntime?.refresh());
       },
     });

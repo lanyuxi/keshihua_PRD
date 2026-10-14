@@ -29,7 +29,8 @@
     shadow: null,
     dotsRoot: null,
     panel: null,
-    mutationObserver: null,
+    scanTimer: 0,
+    anchorSignature: "",
     resizeObserver: null,
     abortController: null,
     refreshFrame: 0,
@@ -521,6 +522,23 @@
     refresh();
   }
 
+  function currentAnchorSignature() {
+    return [...document.querySelectorAll("[data-anno]")].map(anchor => [
+      anchor.dataset.anno || "",
+      anchor.closest("[data-page]")?.dataset.page || "",
+      anchor.closest("[data-anno-scope]")?.dataset.annoScope || "",
+      anchor.closest("[data-anno-scope-id]")?.dataset.annoScopeId || "",
+      anchor.hidden ? "hidden" : "visible"
+    ].join(":" )).join("|");
+  }
+
+  function scanAnchorChanges() {
+    const signature = currentAnchorSignature();
+    if (signature === state.anchorSignature) return;
+    state.anchorSignature = signature;
+    refresh();
+  }
+
   function bindEvents() {
     state.abortController = new AbortController();
     const signal = state.abortController.signal;
@@ -566,25 +584,8 @@
       ? new global.ResizeObserver(schedulePosition)
       : null;
 
-    try {
-      state.mutationObserver = location.protocol !== "about:" && "MutationObserver" in global
-        ? new global.MutationObserver(mutations => {
-            const hasPrototypeChange = mutations.some(mutation => !state.host?.contains(mutation.target));
-            if (hasPrototypeChange) refresh();
-          })
-        : null;
-      state.mutationObserver?.observe(document.documentElement, {
-        attributes: true,
-        childList: true,
-        subtree: true,
-        attributeFilter: [
-          "class", "style", "hidden", "open", "aria-hidden", "aria-selected",
-          "data-anno", "data-anno-page", "data-anno-scope", "data-anno-scope-id"
-        ]
-      });
-    } catch (_) {
-      state.mutationObserver = null;
-    }
+    state.anchorSignature = currentAnchorSignature();
+    state.scanTimer = global.setInterval(scanAnchorChanges, 750);
   }
 
   function applyDefinitionChanges(upserts, removes = []) {
@@ -648,7 +649,7 @@
     if (state.refreshFrame) cancelAnimationFrame(state.refreshFrame);
     if (state.positionFrame) cancelAnimationFrame(state.positionFrame);
     state.abortController?.abort();
-    state.mutationObserver?.disconnect();
+    global.clearInterval(state.scanTimer);
     state.resizeObserver?.disconnect();
     state.host?.remove();
     state.definitions.clear();
@@ -661,7 +662,8 @@
     state.dotsRoot = null;
     state.panel = null;
     state.abortController = null;
-    state.mutationObserver = null;
+    state.scanTimer = 0;
+    state.anchorSignature = "";
     state.resizeObserver = null;
     state.refreshFrame = 0;
     state.positionFrame = 0;

@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:visual-prd:metrics:1.0",
+  "title": "Visual PRD Metrics and Tracking",
+  "type": "object",
+  "required": ["schema_version", "product", "applicability", "applicability_reason", "metrics", "events", "open_questions"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "product": {"type": "string", "minLength": 1},
+    "applicability": {"enum": ["APPLICABLE", "NOT_APPLICABLE", "PENDING"]},
+    "applicability_reason": {"type": "string", "minLength": 1},
+    "metrics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "product_goal", "calculation", "window", "dedupe_rule", "data_source", "event_ids", "acceptance_criteria", "status"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^METRIC-[0-9]{3,}$"},
+          "name": {"type": "string", "minLength": 1},
+          "product_goal": {"type": "string", "minLength": 1},
+          "calculation": {
+            "type": "object",
+            "required": ["type", "formula", "numerator", "denominator"],
+            "properties": {
+              "type": {"enum": ["COUNT", "SUM", "RATIO", "CUSTOM"]},
+              "formula": {"type": "string"},
+              "numerator": {"type": "string"},
+              "denominator": {"type": ["string", "null"]}
+            },
+            "additionalProperties": false
+          },
+          "window": {"type": "string"},
+          "dedupe_rule": {"type": "string"},
+          "data_source": {"type": "string"},
+          "event_ids": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^EVENT-[0-9]{3,}$"}},
+          "acceptance_criteria": {"type": "array", "items": {"type": "string", "minLength": 1}},
+          "status": {"enum": ["CONFIRMED", "PENDING"]}
+        },
+        "additionalProperties": false
+      }
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "trigger_condition", "properties", "acceptance_criteria", "status"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^EVENT-[0-9]{3,}$"},
+          "name": {"type": "string", "minLength": 1},
+          "trigger_condition": {"type": "string"},
+          "prototype_anchor": {"type": "string"},
+          "properties": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["name", "type", "required", "definition"],
+              "properties": {
+                "name": {"type": "string", "minLength": 1},
+                "type": {"enum": ["string", "number", "boolean", "timestamp"]},
+                "required": {"type": "boolean"},
+                "definition": {"type": "string", "minLength": 1}
+              },
+              "additionalProperties": false
+            }
+          },
+          "acceptance_criteria": {"type": "array", "items": {"type": "string", "minLength": 1}},
+          "status": {"enum": ["CONFIRMED", "PENDING"]}
+        },
+        "additionalProperties": false
+      }
+    },
+    "open_questions": {"type": "array", "items": {"type": "string", "minLength": 1}}
+  },
+  "additionalProperties": false
+}

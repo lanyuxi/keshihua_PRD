@@ -2,9 +2,13 @@
 
 把产品说明、可交互 HTML 原型和页面标注放在同一个离线网页中，支持本地修改、授权后自动写回 HTML，以及导出供前端继续开发的页面。
 
-**当前版本：2.2.1。** 本仓库提供可复用的 `visual-prd` 技能、容器模板、构建脚本和完整演示。流程图使用可读的 **Mermaid Markdown 源码**：编辑节点和连线，预览时自动生成图，并保留配套的流程文字说明。
+**当前版本：4.1.6。** 本仓库提供可复用的 `visual-prd` 技能、容器模板、构建脚本和完整演示。流程图使用可读的 **Mermaid Markdown 源码**：编辑节点和连线，预览时自动生成图，并保留配套的流程文字说明。
 
-- [下载技能压缩包](dist/visual-prd-2.2.1.zip)
+4.1.6 以用户提供的 **`visual-prd-aifanche-4.0.2.zip` 原版包为基础**，保留原版三种工作模式、产品模型、界面规范配置器、需求交接、指标定义和评审模式，再加入 2.2.1 的定制能力及说明栏目、流程图查看需求。2.2.1 是新增能力的来源。
+
+原包文件名及发布元数据标为 4.0.2，包内技能正文标为 4.1.4；这是原包自带的标注差异。4.1.6 是本仓库的增强版本，原包 `_meta.json` 保留原样。兼容复核见 [4.1.6 验证记录](docs/verification-4.1.6.md)。
+
+- [下载技能压缩包](dist/visual-prd-4.1.6.zip)
 - [下载离线演示 HTML](examples/visual-prd-demo.html)（下载到本地后用浏览器打开）
 - [查看技能说明](visual-prd/SKILL.md)
 - [查看流程图示例源码](examples/flows.md)
@@ -15,16 +19,22 @@
 
 | 功能 | 使用方式与结果 |
 | --- | --- |
-| 三栏评审 | 左侧跨页面产品说明，中间交互原型，右侧当前页面标注 |
+| 三栏／浮动评审 | 三栏同屏与浮动标注之间切换；保留原版按钮行为 |
+| 完整说明栏目 | 产品概述、流程图、功能需求、角色权限、业务规则、待确认与决策、数据与发布；材料缺失时显示待补充 |
 | 标注联动 | 原型圆点和右侧卡片使用同一编号；点击卡片可定位对应标注 |
 | 逐条编辑 | 每条标注有编辑按钮，可修改标题、Markdown 正文和业务规则 |
 | 粘贴图片 | 文档和标注编辑区支持粘贴位图，图片随完整评审 HTML 保存 |
 | 流程图编辑 | 产品概述后有“流程图”章节，使用 Mermaid 源码编辑，离线渲染 SVG |
+| 流程图查看 | 点击图全屏查看，滚轮缩放 25%–800%，支持下载 PNG |
 | 流程文字说明 | 每张图说明入口、角色、步骤、分支、异常处理与结果；数据流补充来源和更新触发 |
 | 独立栏位开关 | “关闭/开启产品说明”和“关闭/开启页面标注”独立控制左右栏，释放原型空间 |
 | 自动写回磁盘 | 浏览器授权目标 HTML 后，后续修改自动写入该文件 |
 | 当前页下载 | 翻页按钮旁的“下载”以当前页面为默认入口生成 HTML |
 | 全部页面下载 | 顶部“下载全部页面”生成 ZIP，每个页面一个 HTML，保留业务交互 |
+| 原版建模与适配 | 装配、增强、生成三种模式；生成模式从单一产品模型派生文档、标注和原型 |
+| 界面规范 | 调整生成组件的全局或页面配置，预览并导出 JSON |
+| 需求交接与指标 | 按需维护稳定需求 ID、关联验收对象、定义指标与埋点 |
+| 草稿兼容 | 升级后读取原版 localStorage 草稿，并与新草稿及 HTML 内嵌状态比较保存时间 |
 | 离线交付 | 文档、原型运行时、图片与 Mermaid 库内嵌到最终文件中 |
 
 ## 界面截图
@@ -33,17 +43,18 @@
 
 这张截图由用户提供，展示左侧跨页面产品说明、中间可交互原型、右侧当前页面标注，以及顶部的栏位开关、页面下载和磁盘写回入口。右侧标注支持文字编辑和图片展示。
 
-图中的“项目工作台”用于展示评审容器的界面；仓库附带的可运行演示为“条目管理”，包含列表、详情和创建弹层。
+图中的“项目工作台”用于展示评审容器的界面；仓库附带的 4.1.6 可运行演示为“任务看板”，包含任务列表、详情标签和创建弹层。截图用于展示容器布局，不是 4.1.6 演示的截图。
 
 ## 快速体验
 
 1. 下载 [演示 HTML](examples/visual-prd-demo.html)，或克隆仓库。
 2. 用桌面 Chrome 或 Edge 打开 `examples/visual-prd-demo.html`。
-3. 在中间原型点击“查看示例详情”“返回列表”“新建条目”，体验页面跳转和表单校验。
+3. 在中间原型点击“查看详情”“任务列表”“新建任务”，体验页面跳转和表单校验。
 4. 点击右侧标注的“编辑”修改文字或粘贴图片。
 5. 左侧点击“流程图 → 编辑”修改源码和说明，点击“预览”查看结果。
-6. 点击顶部“授权自动写回”，选择目标 HTML。确认显示“已自动写回”后，修改才真正保存在磁盘中。
-7. 使用“下载”或“下载全部页面”交付开发页面。
+6. 点击预览中的流程图全屏查看，使用滚轮缩放或“下载图片”保存 PNG。
+7. 点击顶部“授权自动写回”，选择目标 HTML。确认显示“已自动写回”后，修改才真正保存在磁盘中。
+8. 使用“下载”或“下载全部页面”交付开发页面。
 
 只看演示不需要 Python、Node.js 或安装依赖。演示是前端原型，没有接入后端业务服务。
 
@@ -62,40 +73,35 @@
 尚未确认的业务规则请标记为“待确认”。
 ```
 
-技能中的工作流覆盖需求澄清、板块规划、逐板块 PRD 与原型生成、交互自检及最终装配。任务已明确的部分可以直接使用现有需求；具体业务规则仍应来自已确认的产品信息。
+技能先按已有材料选择最小工作模式：已有 PRD、原型和标注时装配；已有普通 HTML 时在工作副本中增强；只有需求时建立产品模型并生成。未知规则标为待确认，界面规范、需求交接与指标定义按需使用。
 
 ## 目录结构
 
 ```text
 keshihua_PRD/
 ├── README.md
-├── visual-prd/
-│   ├── SKILL.md                    技能入口与验收要求
-│   ├── assets/
-│   │   ├── container-template.html  评审容器模板
-│   │   ├── prototype-template.html  交互原型骨架
-│   │   ├── container-styles.css     拆分开发时的样式参考
-│   │   ├── mermaid.min.js           离线流程图渲染库
-│   │   └── mermaid-LICENSE.txt      Mermaid 许可
-│   ├── scripts/
-│   │   ├── build-container.py       装配单文件 HTML
-│   │   ├── prototype-runtime.js     路由、状态和表单运行时
-│   │   ├── annotation-runtime.js    标注运行时
-│   │   ├── check-interactions.js    静态交互检查
-│   │   ├── validate-package.py      技能包与烟雾构建校验
-│   │   └── package-skill.py         版本化 ZIP 打包
-│   └── references/                 PRD、标注、渲染及交付指南
+├── visual-prd/                       完整技能（57 个文件）
+│   ├── SKILL.md                      技能入口与兼容边界
+│   ├── _meta.json                    保留原包发布元数据
+│   ├── assets/                       容器、模型、界面规范模板及 Mermaid
+│   ├── scripts/                      构建、校验、运行时及打包脚本
+│   └── references/                   三种模式与需求、编辑、交付指南
 ├── examples/
-│   ├── prototype-source.html       演示原型输入
-│   ├── prd.md                      演示产品说明输入
-│   ├── annotations.json            演示标注输入
-│   ├── flows.md                    可编辑流程图输入
-│   └── visual-prd-demo.html         已构建的离线演示
+│   ├── visual-prd.project.json       可重建的项目清单
+│   ├── product-model.json            示例任务看板的业务模型
+│   ├── ui-profile.json               示例界面规范
+│   ├── flows.md                      Mermaid 源码及流程说明
+│   ├── prototype-source.html         派生的原型源文件
+│   ├── prd.md                        派生的 PRD
+│   ├── annotations.json              派生的标注数据
+│   └── visual-prd-demo.html           已构建的 4.1.6 离线演示
 ├── dist/
-│   └── visual-prd-2.2.1.zip         可分发技能压缩包
+│   ├── visual-prd-4.1.6.zip           当前可分发技能包
+│   └── visual-prd-2.2.1.zip           历史定制版本
 └── docs/
-    ├── screenshots/                界面截图
-    └── verification-2.2.md         流程图修改验证记录
+    ├── screenshots/visual-prd-overview.png  用户指定的唯一截图
+    ├── verification-4.1.6.md          当前合并及兼容验证
+    └── verification-2.2.md            历史流程图验证
 ```
 
 ## 从源码构建
@@ -107,8 +113,9 @@ git clone https://github.com/lanyuxi/keshihua_PRD.git
 cd keshihua_PRD
 
 python3 visual-prd/scripts/validate-package.py
-node visual-prd/scripts/check-interactions.js examples/prototype-source.html
+python3 visual-prd/scripts/build-review.py examples/visual-prd.project.json
 
+# 兼容旧的直接装配入口
 python3 visual-prd/scripts/build-container.py \
   --prototype examples/prototype-source.html \
   --prd examples/prd.md \
@@ -125,7 +132,17 @@ python3 visual-prd/scripts/build-container.py \
 
 `build/` 已加入 `.gitignore`，避免临时构建覆盖仓库中预先生成的演示。
 
-### 四类输入
+### 三种模式
+
+| 模式 | 输入与结果 |
+| --- | --- |
+| assemble | 已有 PRD、标注占位原型和标注 JSON，校验后装配 |
+| enhance | 已有普通离线 HTML，先在工作副本中建立真实标注及锚点，再增强；保留原有交互 |
+| generate | 从 product-model.json 派生 PRD、原型和标注；可附加 ui-profile.json |
+
+所有模式均可通过 `inputs.flows` 指定流程 Markdown。示例项目输出到 `build/`。
+
+### 四类装配输入
 
 | 输入 | 内容 | 对应指南 |
 | --- | --- | --- |
@@ -140,19 +157,19 @@ python3 visual-prd/scripts/build-container.py \
 
 ```html
 <button type="button" data-action="open-modal:create"
-        data-anno="template-create">新建条目</button>
+        data-anno="create-entry">新建任务</button>
 ```
 
 标注数据：
 
 ```json
 {
-  "id": "template-create",
+  "id": "create-entry",
   "order": 2,
   "pageId": "list",
   "title": "创建入口",
   "body": "点击打开创建表单。",
-  "businessRules": ["名称至少两个字符"],
+  "businessRules": ["任务名称不能为空"],
   "scope": { "type": "page", "id": "list" }
 }
 ```
@@ -164,16 +181,16 @@ python3 visual-prd/scripts/build-container.py \
 以下内容可直接放入 `flows.md` 或粘贴到流程图编辑区：
 
 ````markdown
-## 创建条目流程
+## 创建任务流程
 
 入口：用户在列表点击新建。填写名称后提交。
-名称不符合要求时保留输入并提示错误；校验通过后创建并反馈成功。
-取消只关闭弹层，不创建条目。
+任务名称为空时保留输入并提示错误；校验通过后创建任务并反馈成功。
+取消只关闭弹层，不创建任务。
 
 ```mermaid
 graph TD
-    A[点击新建条目] --> B[填写名称并提交]
-    B --> C{名称至少两个字符?}
+    A[点击新建任务] --> B[填写名称并提交]
+    B --> C{任务名称是否已填写?}
     C -->|否| D[提示错误并保留输入]
     D --> B
     C -->|是| E[创建并反馈成功]
@@ -193,7 +210,7 @@ graph TD
 
 | 状态 | 含义 |
 | --- | --- |
-| 浏览器草稿 | IndexedDB 用于恢复未完成的编辑；不代表磁盘 HTML 已更新 |
+| 浏览器草稿 | IndexedDB 保存完整草稿，原版 localStorage 草稿仍可恢复；不代表磁盘 HTML 已更新 |
 | 已自动写回 | 所选 HTML 的写入流已成功关闭，编辑内容已经写入磁盘文件 |
 
 首次使用时点击“授权自动写回”，在浏览器文件选择器中选择当前 HTML 或一个新副本。停止输入约 320 ms 后触发自动保存，写入串行执行。顶部状态显示所选文件名。
@@ -205,6 +222,8 @@ graph TD
 - 不支持文件授权接口时只能下载完整评审副本，不能实现自动写回。
 
 文件授权接口的说明见 [Chrome 官方文档](https://developer.chrome.com/docs/capabilities/web-apis/file-system-access)。只需选择你确实希望被自动更新的 HTML 文件。
+
+评审 HTML 保存不会反向改写 `product-model.json`、`prd.md`、`flows.md` 或 `annotations.json`。正式需求变更仍应更新对应源文件并重建。界面规范随评审副本恢复，但正式配置继续通过 JSON 导出与重建固化。
 
 ## 给前端交付页面
 
@@ -230,12 +249,12 @@ node visual-prd/scripts/check-interactions.js examples/prototype-source.html
 
 # 按 SKILL.md 中的版本生成分发包
 python3 visual-prd/scripts/package-skill.py \
-  --output dist/visual-prd-2.2.1.zip
+  --output dist/visual-prd-4.1.6.zip
 ```
 
 静态检查通过后，还应在真实浏览器中操作导航、弹层、输入、校验、标注编辑和下载。验证磁盘保存时，检查实际文件并从新路径重开，避免只验证了浏览器草稿。
 
-本次 2.2 流程图验证覆盖源码编辑、离线渲染、语法错误恢复、修改后自动写回、新路径重开、过期渲染防护和导出边界。详情见 [验证记录](docs/verification-2.2.md)。没有把未重新执行的完整原型交互测试描述为本次已经全部通过。
+4.1.6 已通过完整技能校验、原版 8 组功能检查与 11 组 Chrome 浏览器回归，覆盖旧草稿恢复、评审模式、栏目内容、标注与图片编辑、流程图全屏/缩放/PNG、页面导出及文件句柄保存恢复。保存拒绝和失败分支另有 API 替身检查，不冒充原生权限失败操作。详情见 [当前验证记录](docs/verification-4.1.6.md)；[历史记录](docs/verification-2.2.md)仍保留。
 
 ## 常见问题
 
@@ -250,6 +269,8 @@ python3 visual-prd/scripts/package-skill.py \
 **可以装入任意第三方网页吗？** 当前容器会读取原型 DOM 以定位标注，只应装入经检查的当前任务原型。信任边界与移植要求见 [安全与可移植性指南](visual-prd/references/security-and-portability.md)。
 
 ## 版本与依赖
+
+4.1.6 基于提供的 4.0.2 原包，保留全部 51 个原文件和原版功能，加入 2.2.1 能力以及七个说明栏目、流程图全屏缩放与 PNG 下载。修复升级后原版浏览器草稿被忽略的问题，恢复原栏目内容范围。
 
 2.2.1 将顶部操作按钮调整为 12 px 字号、32 px 最小高度和 14 px 图标，减少按钮占用空间。
 

@@ -4,119 +4,268 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    /* 基于业务视觉继续扩展；保留 hidden 的原生隐藏语义。 */
-    [hidden] { display: none !important; }
-    body { margin: 0; color: #172033; background: #f5f7fa; font: 14px/1.5 system-ui, sans-serif; }
-    button, input { font: inherit; }
-    .page { padding: 24px; }
-    .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-    .panel { margin-top: 18px; padding: 18px; border: 1px solid #dfe3ea; border-radius: 12px; background: #fff; }
-    .dialog { position: fixed; inset: 50% auto auto 50%; width: min(420px, calc(100% - 32px)); padding: 20px; transform: translate(-50%, -50%); border-radius: 12px; background: #fff; box-shadow: 0 24px 80px rgba(23, 32, 51, .24); }
-    .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+    :root {
+      color-scheme: light;
+      --brand:#356AE6; --brand-contrast:#FFFFFF;
+      --ink:#172033; --muted:#667085; --line:#D9DEE8;
+      --surface:#FFFFFF; --canvas:#F4F6F9;
+      --nav:#182033; --nav-text:#D7DCE8; --nav-active:#2B3857;
+      --success:#16845B; --warning:#B26A00; --danger:#C03245;
+      --focus:#356AE6; --backdrop:rgba(15, 23, 42, 0.46);
+      --font-family:system-ui, sans-serif; --font-size:14px; --line-height:1.5;
+      --radius-control:8px; --radius-panel:12px; --radius-overlay:14px;
+      --space-page:24px; --space-panel:20px;
+      --control-x:12px; --control-y:8px;
+      --gap:10px; --panel-shadow:0 4px 18px rgba(23,32,51,.08); --overlay-shadow:0 24px 80px rgba(23,32,51,.24);
+      --drawer-width:480px;
+    }
+    * { box-sizing:border-box; } [hidden] { display:none!important; } body { margin:0; color:var(--ink); background:var(--canvas); font:var(--font-size)/var(--line-height) var(--font-family); } button,input,select,textarea { font:inherit; } button { cursor:pointer; } button:disabled,[aria-disabled="true"] { cursor:not-allowed; opacity:.45; } button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible { outline:3px solid color-mix(in srgb,var(--focus) 30%,transparent); outline-offset:2px; }
+    .shell { min-height:100vh; display:grid; grid-template-columns:220px 1fr; } .nav { padding:24px 16px; color:var(--brand-contrast); background:var(--nav); } .brand { margin:0 0 24px; font-size:18px; } .nav button { width:100%; margin:4px 0; padding:11px 12px; border:0; border-radius:var(--radius-control); color:var(--nav-text); background:transparent; text-align:left; } .nav button.active { color:var(--brand-contrast); background:var(--nav-active); }
+    .content { padding:var(--space-page); overflow:auto; } .page { max-width:1180px; margin:auto; } .route-context { margin:0 0 12px; padding:8px 12px; border:1px solid var(--line); border-radius:var(--radius-control); color:var(--muted); background:var(--surface); } .hero,.panel { margin-bottom:18px; padding:var(--space-panel); border:1px solid var(--line); border-radius:var(--radius-panel); background:var(--surface); box-shadow:var(--panel-shadow); } .hero { display:flex; align-items:center; justify-content:space-between; gap:24px; background:var(--brand); color:var(--brand-contrast); } .hero h1 { margin:4px 0; font-size:30px; } .hero p { margin:0; opacity:.86; } .eyebrow { font-size:12px; font-weight:700; letter-spacing:.12em; } .hero-actions,.form-actions,.section-head,.list-controls { display:flex; align-items:center; gap:var(--gap); } .section-head { justify-content:space-between; }
+    .btn,button { padding:var(--control-y) var(--control-x); border:1px solid var(--line); border-radius:var(--radius-control); background:var(--surface); color:var(--ink); } .hero .btn { border-color:transparent; } .btn.primary { color:var(--brand-contrast); background:var(--brand); border-color:var(--brand); } .btn.ghost { border-color:transparent; background:transparent; } .btn.danger { color:var(--danger); border-color:var(--danger); } .stats,.cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px; margin-bottom:18px; } .stat,.card { padding:18px; border:1px solid var(--line); border-radius:var(--radius-panel); background:var(--surface); } .stat span,.list-card span { color:var(--muted); } .stat strong { display:block; margin-top:6px; font-size:26px; }
+    h2 { margin:0 0 12px; } p { white-space:pre-line; } .table-wrap { overflow:auto; } table { width:100%; border-collapse:collapse; } th,td { padding:12px; border-bottom:1px solid var(--line); text-align:left; } .density-compact th,.density-compact td { padding:8px 10px; } th { color:var(--muted); background:color-mix(in srgb,var(--canvas) 78%,var(--surface)); } .search,select,input,textarea { padding:var(--control-y) var(--control-x); border:1px solid var(--line); border-radius:var(--radius-control); background:var(--surface); color:var(--ink); } [aria-invalid="true"] { border-color:var(--danger)!important; } .filter-group { display:flex; align-items:center; gap:4px; } .filter-segmented { padding:4px; border:1px solid var(--line); border-radius:var(--radius-control); } .filter-chips button { border-radius:999px; } .filter-group button.active { color:var(--brand-contrast); border-color:var(--brand); background:var(--brand); }
+    .tabs { display:flex; gap:8px; border-bottom:1px solid var(--line); } .tabs button.active { color:var(--brand); border-color:var(--brand); } .tabs-pills,.tabs-segmented { display:inline-flex; padding:4px; border:1px solid var(--line); border-radius:var(--radius-control); } .tabs-pills { border-color:transparent; } .tabs-pills button { border-radius:999px; } .tabs-pills button.active,.tabs-segmented button.active { color:var(--brand-contrast); background:var(--brand); } .tab-panel { padding:18px 4px 2px; } .timeline li { margin:12px 0; } .timeline span { display:block; color:var(--muted); }
+    .list-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:var(--gap); } .list-card { display:grid; gap:10px; padding:16px; border:1px solid var(--line); border-radius:var(--radius-panel); background:var(--surface); } .list-card div { display:flex; justify-content:space-between; gap:12px; } .density-compact.list-cards .list-card { padding:11px; gap:6px; } .empty-state { padding:24px; color:var(--muted); text-align:center; border:1px dashed var(--line); border-radius:var(--radius-panel); }
+    .modal-card { width:min(520px,calc(100vw - 32px)); padding:var(--space-panel); border-radius:var(--radius-overlay); background:var(--surface); box-shadow:var(--overlay-shadow); } .modal-small { width:min(380px,calc(100vw - 32px)); } .modal-large { width:min(720px,calc(100vw - 32px)); } .modal-card[data-modal-type="drawer"] { width:min(var(--drawer-width),calc(100vw - 24px)); } .modal-card header { display:flex; align-items:center; justify-content:space-between; } .modal-card form { display:grid; gap:14px; } .modal-card label span { display:block; margin-bottom:5px; } .modal-card input,.modal-card select,.modal-card textarea { width:100%; } .form-actions { justify-content:flex-end; } #toast-root { position:fixed; right:24px; bottom:24px; padding:10px 16px; border-radius:var(--radius-control); color:var(--brand-contrast); background:var(--ink); opacity:0; transform:translateY(8px); transition:.2s; } #toast-root.show { opacity:1; transform:none; }
+    @media(max-width:720px) { .shell { grid-template-columns:1fr; } .nav { display:flex; align-items:center; gap:8px; padding:12px; overflow:auto; } .brand { margin:0 10px 0 0; white-space:nowrap; } .nav button { width:auto; white-space:nowrap; } .content { padding:14px; } .hero,.section-head { align-items:flex-start; flex-direction:column; } }
   </style>
 </head>
 <body data-anno-page="list">
-  <div id="app"></div>
-  <div id="modal-root"></div>
-  <div id="toast-root"></div>
-
+  <div class="shell"><nav class="nav"><h1 class="brand">示例任务看板</h1><button type="button" data-action="navigate:list" data-route-active="list">任务列表</button><button type="button" data-action="navigate:detail" data-route-active="detail">任务详情</button></nav><div class="content" id="app"></div></div>
+  <div id="modal-root"></div><div id="toast-root" role="status"></div>
   <script>
-    // ========== 1. 状态定义 ==========
     const initialState = {
-      currentPage: 'list',
-      items: [],
-      draft: { title: '' },
+  "currentPage": "list",
+  "prototypeNotice": false,
+  "activeTabs": {
+    "detail": "overview"
+  },
+  "lists": {
+    "tasks": {
+      "filters": {},
+      "search": "",
+      "sort": {},
+      "items": [
+        {
+          "id": "task-1",
+          "title": "完成方案评审",
+          "owner": "负责人",
+          "status": "进行中"
+        },
+        {
+          "id": "task-2",
+          "title": "整理用户反馈",
+          "owner": "成员甲",
+          "status": "待处理"
+        }
+      ]
+    }
+  },
+  "drafts": {
+    "create": {
+      "title": ""
+    }
+  }
+};
+    const pages = {"list": { render: () => `<main class="page" data-page="list" data-page-label="任务列表" hidden><div class="route-context" data-route-context hidden></div><section class="hero" id="list-hero" data-anno="task-overview"><div><span class="eyebrow">PRODUCT</span><h1>任务看板</h1><p>查看团队任务并快速创建新任务。</p></div><div class="hero-actions"><button type="button" class="btn primary" data-action="open-modal:create" data-anno="create-entry">新建任务</button></div></section><section class="panel" id="task-list" data-ui-list-section data-ui-list-id="tasks"><div class="section-head"><div><h2>任务列表</h2><p>支持搜索、筛选和排序。</p></div><div class="list-controls" data-list-controls="tasks"><input class="search" type="search" placeholder="搜索" data-search="tasks" data-list-target="tasks"><select data-ui-filter-variant="select" data-filter="status" data-list-target="tasks" hidden><option value="all">全部</option><option value="待处理">待处理</option><option value="进行中">进行中</option></select><div class="filter-group filter-segmented" data-ui-filter-variant="segmented"><button type="button" class="active" data-filter="status=all" data-list-target="tasks" aria-pressed="true">全部</button><button type="button" data-filter="status=待处理" data-list-target="tasks" aria-pressed="false">待处理</button><button type="button" data-filter="status=进行中" data-list-target="tasks" aria-pressed="false">进行中</button></div><div class="filter-group filter-chips" data-ui-filter-variant="chips" hidden><button type="button" class="active" data-filter="status=all" data-list-target="tasks" aria-pressed="true">全部</button><button type="button" data-filter="status=待处理" data-list-target="tasks" aria-pressed="false">待处理</button><button type="button" data-filter="status=进行中" data-list-target="tasks" aria-pressed="false">进行中</button></div></div></div><div class="table-wrap density-compact" data-ui-list-view="table"><table><thead><tr><th><span role="button" tabindex="0" data-sort="title" data-list-target="tasks">任务</span></th><th><span role="button" tabindex="0" data-sort="owner" data-list-target="tasks">负责人</span></th><th><span role="button" tabindex="0" data-sort="status" data-list-target="tasks">状态</span></th><th>操作</th></tr></thead><tbody data-list="tasks"><tr data-list-item data-search-text="task-1 完成方案评审 负责人 进行中" data-id="task-1" data-title="完成方案评审" data-owner="负责人" data-status="进行中"><td>完成方案评审</td><td>负责人</td><td>进行中</td><td><button type="button" data-action="navigate:detail" data-params='{&quot;taskId&quot;:&quot;task-1&quot;}'>查看详情</button></td></tr><tr data-list-item data-search-text="task-2 整理用户反馈 成员甲 待处理" data-id="task-2" data-title="整理用户反馈" data-owner="成员甲" data-status="待处理"><td>整理用户反馈</td><td>成员甲</td><td>待处理</td><td><button type="button" data-action="navigate:detail" data-params='{&quot;taskId&quot;:&quot;task-2&quot;}'>查看详情</button></td></tr></tbody></table></div><div class="empty-state" data-empty-for="tasks" hidden>暂无符合条件的数据</div></section></main>` }, "detail": { render: () => `<main class="page" data-page="detail" data-page-label="任务详情" hidden><div class="route-context" data-route-context hidden></div><section class="panel" id="detail-tabs"><div class="tabs tabs-underline" data-ui-component="tabs"><button type="button" data-action="set-state:activeTabs.detail=overview" data-tab-button="detail:overview">概览</button><button type="button" data-action="set-state:activeTabs.detail=history" data-tab-button="detail:history">历史</button></div><section class="tab-panel" data-tab-panel="detail:overview"><h3>概览</h3><p>任务背景与当前状态。</p></section><section class="tab-panel" data-tab-panel="detail:history"><h3>历史</h3><p>任务的变更记录。</p></section></section></main>` }};
+    const modals = {"create": { render: () => `<section class="modal-card modal-medium" data-modal="create" data-modal-type="dialog" data-ui-component="modal" data-ui-page-id="list" data-anno-scope="modal" data-anno-scope-id="create" hidden data-anno="create-form"><header><h2>新建任务</h2><button type="button" data-action="close-modal" aria-label="关闭">×</button></header><form id="create-form" data-form="create-form" data-submit-operation="append" data-submit-target="tasks"><label><span>任务名称</span><input type="text" name="title" data-model="drafts.create.title" required data-validate="required"></label><div class="form-actions"><button type="button" data-action="close-modal">取消</button><button type="button" class="btn primary" data-action="submit:create-form">创建</button></div></form></section>` }};
+    const listSchemas = {"tasks": {"variant": "table", "density": "compact", "declaredVariant": null, "declaredDensity": null, "declaredFilterVariant": null, "hasFilters": true, "pageId": "list", "columns": [{"key": "title", "label": "任务"}, {"key": "owner", "label": "负责人"}, {"key": "status", "label": "状态"}], "rowAction": "navigate:detail", "rowActionLabel": "查看详情", "rowParams": {"taskId": "{id}"}}};
+    const initialUiProfile = {"schema_version": "1.0", "id": "product-system", "name": "产品系统界面规范", "tokens": {"colors": {"brand": "#356AE6", "brand_contrast": "#FFFFFF", "ink": "#172033", "muted": "#667085", "line": "#D9DEE8", "surface": "#FFFFFF", "canvas": "#F4F6F9", "nav": "#182033", "nav_text": "#D7DCE8", "nav_active": "#2B3857", "success": "#16845B", "warning": "#B26A00", "danger": "#C03245", "focus": "#356AE6", "backdrop": "rgba(15, 23, 42, 0.46)"}, "typography": {"font_family": "system-ui, sans-serif", "base_size": 14, "line_height": 1.5}, "radii": {"control": 8, "panel": 12, "overlay": 14}, "spacing": {"page": 24, "panel": 20, "control_x": 12, "control_y": 8, "gap": 10}, "shadows": {"panel": "soft", "overlay": "strong"}}, "components": {"filter": {"variant": "segmented"}, "list": {"variant": "table", "density": "compact"}, "tabs": {"variant": "underline"}, "button": {"size": "medium"}, "modal": {"dialog_size": "medium", "drawer_width": 480}}, "page_overrides": {}};
+    const submitSpecs = {"create": {"label": "创建", "success_message": "任务已创建", "operation": "append", "target_list": "tasks", "record": {"id": "$auto", "title": "{title}", "owner": "未分配", "status": "待处理"}}};
+    const generatedText = value => value == null ? '' : String(value);
+    const generatedTemplate = (value, source) => typeof value === 'string'
+      ? value.replace(/\{([A-Za-z][A-Za-z0-9_-]*)\}/g, (_, key) => generatedText(source[key]))
+      : value;
+    const generatedParams = (templates, row) => Object.fromEntries(
+      Object.entries(templates || { id: '{id}' }).map(([key, value]) => [key, generatedTemplate(value, row)])
+    );
+    const uiClone = value => JSON.parse(JSON.stringify(value));
+    const uiMerge = (base, patch) => {
+      const result = uiClone(base || {});
+      Object.entries(patch || {}).forEach(([key, value]) => {
+        result[key] = value && typeof value === 'object' && !Array.isArray(value) && result[key] && typeof result[key] === 'object'
+          ? uiMerge(result[key], value)
+          : uiClone(value);
+      });
+      return result;
     };
-
-    // ========== 2. 页面定义 ==========
-    const pages = {
-      list: {
-        render: () => `
-          <section class="page" data-page="list">
-            <header class="toolbar" data-anno="template-list">
-              <div><h1>条目列表</h1><p>替换为该板块的真实列表与说明。</p></div>
-              <button type="button" data-action="open-modal:create" data-anno="template-create">新建条目</button>
-            </header>
-            <div class="panel">
-              <button type="button" data-action="navigate:detail" data-params='{"id":"example"}'>查看示例详情</button>
-            </div>
-          </section>`,
-      },
-      detail: {
-        render: () => `
-          <section class="page" data-page="detail" hidden>
-            <button type="button" data-action="navigate:list">返回列表</button>
-            <h1>条目详情</h1>
-          </section>`,
-      },
-    };
-
-    // ========== 3. 弹层定义 ==========
-    const modals = {
-      create: {
-        render: () => `
-          <section class="dialog" data-modal="create" data-modal-type="dialog" data-anno-scope="modal" data-anno-scope-id="template-create" hidden>
-            <h2>新建条目</h2>
-            <form id="create-form" data-form="create-form" data-anno="template-create-form">
-              <label>名称 <input name="title" data-model="draft.title" data-validate="required|min:2"></label>
-              <div class="actions">
-                <button type="button" data-action="close-modal">取消</button>
-                <button type="button" data-action="submit:create-form">确定</button>
-              </div>
-            </form>
-          </section>`,
-      },
-    };
-
-    // ========== 4. Action 处理 ==========
-    const actions = {
-      'submit:create-form': ({ values, state }) => {
-        const newItem = { id: `item-${Date.now()}`, ...values };
-        window.__proto.closeModal();
-        document.querySelector('#toast-root').textContent = `已创建“${values.title}”`;
-        return { items: [...state.items, newItem], draft: { title: '' } };
-      },
-    };
-
-    // ========== 5. 初始 DOM 装配 ==========
-    document.querySelector('#app').innerHTML = Object.values(pages)
-      .map(page => page.render(initialState))
-      .join('');
-    document.querySelector('#modal-root').innerHTML = Object.values(modals)
-      .map(modal => modal.render(initialState))
-      .join('');
+    const effectiveUiProfile = (profile, pageId) => uiMerge(profile, profile.page_overrides?.[pageId] || {});
+    const uiShadow = level => ({ none:'none', soft:'0 4px 18px rgba(23,32,51,.08)', medium:'0 12px 36px rgba(23,32,51,.14)', strong:'0 24px 80px rgba(23,32,51,.24)' }[level] || 'none');
+    function applyUiTokens(effective) {
+      const root = document.documentElement.style;
+      const colors = effective.tokens.colors;
+      Object.entries(colors).forEach(([key, value]) => root.setProperty(`--${key.replaceAll('_', '-')}`, value));
+      const type = effective.tokens.typography;
+      root.setProperty('--font-family', type.font_family); root.setProperty('--font-size', `${type.base_size}px`); root.setProperty('--line-height', type.line_height);
+      const radii = effective.tokens.radii;
+      root.setProperty('--radius-control', `${radii.control}px`); root.setProperty('--radius-panel', `${radii.panel}px`); root.setProperty('--radius-overlay', `${radii.overlay}px`);
+      const spacing = effective.tokens.spacing;
+      const scale = ({ small:[.78,.86], medium:[1,1], large:[1.22,1.14] })[effective.components.button.size] || [1,1];
+      root.setProperty('--space-page', `${spacing.page}px`); root.setProperty('--space-panel', `${spacing.panel}px`); root.setProperty('--gap', `${spacing.gap}px`);
+      root.setProperty('--control-x', `${Math.round(spacing.control_x * scale[0] * 100) / 100}px`); root.setProperty('--control-y', `${Math.round(spacing.control_y * scale[1] * 100) / 100}px`);
+      root.setProperty('--panel-shadow', uiShadow(effective.tokens.shadows.panel)); root.setProperty('--overlay-shadow', uiShadow(effective.tokens.shadows.overlay));
+      root.setProperty('--drawer-width', `${effective.components.modal.drawer_width}px`);
+    }
+    function buildListView(listId, variant, density) {
+      const schema = listSchemas[listId];
+      const section = [...document.querySelectorAll('[data-ui-list-section]')].find(node => node.dataset.uiListId === listId);
+      const current = section?.querySelector('[data-ui-list-view]');
+      if (!schema || !section || !current) return;
+      if (variant === 'compact') { variant = 'table'; density = 'compact'; }
+      const currentVariant = current.dataset.uiListView;
+      const densityClass = density === 'compact' ? 'compact' : 'comfortable';
+      if (currentVariant === variant) {
+        current.classList.remove('density-compact', 'density-comfortable'); current.classList.add(`density-${densityClass}`);
+        schema.density = density; return;
+      }
+      let replacement;
+      if (variant === 'cards') {
+        replacement = document.createElement('div'); replacement.className = `list-cards density-${densityClass}`; replacement.dataset.list = listId;
+      } else {
+        replacement = document.createElement('div'); replacement.className = `table-wrap density-${densityClass}`;
+        const table = document.createElement('table'); const thead = document.createElement('thead'); const headRow = document.createElement('tr');
+        schema.columns.forEach(column => { const th = document.createElement('th'); const sort = document.createElement('span'); sort.role = 'button'; sort.tabIndex = 0; sort.dataset.sort = column.key; sort.dataset.listTarget = listId; sort.textContent = column.label || column.key; th.appendChild(sort); headRow.appendChild(th); });
+        if (schema.rowAction) { const th = document.createElement('th'); th.textContent = '操作'; headRow.appendChild(th); }
+        const body = document.createElement('tbody'); body.dataset.list = listId; thead.appendChild(headRow); table.append(thead, body); replacement.appendChild(table);
+      }
+      replacement.dataset.uiListView = variant;
+      schema.variant = variant; schema.density = density;
+      current.replaceWith(replacement);
+    }
+    function applyUiComponents(profile) {
+      Object.entries(listSchemas).forEach(([listId, schema]) => {
+        const effective = effectiveUiProfile(profile, schema.pageId);
+        const settings = effective.components;
+        const filterVariant = schema.declaredFilterVariant || settings.filter.variant;
+        const listVariant = schema.declaredVariant || settings.list.variant;
+        const listDensity = schema.declaredDensity || settings.list.density;
+        const section = [...document.querySelectorAll('[data-ui-list-section]')].find(node => node.dataset.uiListId === listId);
+        section?.querySelectorAll('[data-ui-filter-variant]').forEach(control => {
+          control.hidden = control.dataset.uiFilterVariant !== filterVariant;
+          if (control.matches('select[data-filter]')) control.value = window.__proto?.state?.lists?.[listId]?.filters?.[control.dataset.filter] || 'all';
+        });
+        buildListView(listId, listVariant, listDensity);
+      });
+      document.querySelectorAll('[data-page]').forEach(page => {
+        const settings = effectiveUiProfile(profile, page.dataset.page).components;
+        page.querySelectorAll('[data-ui-component="tabs"]').forEach(tabs => { const variant = tabs.dataset.uiVariantLock || settings.tabs.variant; tabs.classList.remove('tabs-underline','tabs-pills','tabs-segmented'); tabs.classList.add(`tabs-${variant}`); });
+      });
+      document.querySelectorAll('[data-ui-component="modal"]').forEach(modal => {
+        const settings = effectiveUiProfile(profile, modal.dataset.uiPageId).components;
+        const size = modal.dataset.uiDialogLock || settings.modal.dialog_size;
+        modal.classList.remove('modal-small','modal-medium','modal-large'); modal.classList.add(`modal-${size}`);
+      });
+      window.__proto?.render();
+    }
+    function applyUiProfile(profile, pageId) {
+      const activePage = pageId || window.__proto?.state?.route?.pageId || initialState.currentPage;
+      applyUiTokens(effectiveUiProfile(profile, activePage));
+      applyUiComponents(profile);
+      requestAnimationFrame(() => window.AnnotationRuntime?.refresh());
+    }
+    function describeUiProfile(pageId) {
+      const result = {};
+      const describe = (path, nodes, locked) => {
+        const total = nodes.length;
+        const lockedCount = nodes.filter(locked).length;
+        result[path] = { total, lockedCount, partial: lockedCount > 0 && lockedCount < total };
+      };
+      const lists = Object.values(listSchemas).filter(schema => schema.pageId === pageId);
+      describe('components.filter.variant', lists.filter(schema => schema.hasFilters), schema => Boolean(schema.declaredFilterVariant));
+      describe('components.list.variant', lists, schema => Boolean(schema.declaredVariant));
+      describe('components.list.density', lists, schema => Boolean(schema.declaredDensity));
+      const page = document.querySelector(`[data-page="${CSS.escape(pageId)}"]`);
+      describe('components.tabs.variant', [...(page?.querySelectorAll('[data-ui-component="tabs"]') || [])], node => Boolean(node.dataset.uiVariantLock));
+      const modals = [...document.querySelectorAll(`[data-ui-component="modal"][data-ui-page-id="${CSS.escape(pageId)}"]`)];
+      describe('components.modal.dialog_size', modals, node => Boolean(node.dataset.uiDialogLock));
+      return result;
+    }
+    const generatedRecord = (template, values) => Object.fromEntries(Object.entries(template || {}).map(([key, value]) => {
+      if (value === '$auto') return [key, `item-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`];
+      return [key, generatedTemplate(value, values)];
+    }));
+    function generatedActionButton(schema, row) {
+      if (!schema.rowAction) return null;
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.dataset.action = generatedTemplate(schema.rowAction, row);
+      button.dataset.params = JSON.stringify(generatedParams(schema.rowParams, row));
+      button.textContent = schema.rowActionLabel || '查看详情';
+      return button;
+    }
+    function renderGeneratedList(list, items) {
+      const schema = listSchemas[list.dataset.list];
+      if (!schema) return;
+      const nodes = (items || []).map(row => {
+        const item = document.createElement(schema.variant === 'cards' ? 'article' : 'tr');
+        if (schema.variant === 'cards') item.className = 'list-card';
+        item.dataset.listItem = '';
+        item.dataset.searchText = Object.values(row).filter(value => !value || typeof value !== 'object').map(generatedText).join(' ');
+        Object.entries(row).forEach(([key, value]) => { if (value == null || typeof value === 'object') return; item.setAttribute(`data-${key}`, generatedText(value)); });
+        if (row.annotation?.id) item.dataset.anno = row.annotation.id;
+        schema.columns.forEach(column => {
+          const cell = document.createElement(schema.variant === 'cards' ? 'div' : 'td');
+          if (schema.variant === 'cards') { const label = document.createElement('span'); label.textContent = column.label || column.key; const value = document.createElement('strong'); value.textContent = generatedText(row[column.key]); cell.append(label, value); }
+          else cell.textContent = generatedText(row[column.key]);
+          item.appendChild(cell);
+        });
+        const action = generatedActionButton(schema, row);
+        if (action) { if (schema.variant === 'cards') item.appendChild(action); else { const cell = document.createElement('td'); cell.appendChild(action); item.appendChild(cell); } }
+        return item;
+      });
+      list.replaceChildren(...nodes);
+    }
+    const listRenderers = Object.fromEntries(Object.keys(listSchemas).map(listId => [listId, (list, items) => renderGeneratedList(list, items)]));
+    function handleGeneratedSubmit(modalId, values, state) {
+      const spec = submitSpecs[modalId] || { operation: 'save' };
+      const currentDraft = state.drafts?.[modalId] || {};
+      const patch = { drafts: { [modalId]: spec.operation === 'append' ? Object.fromEntries(Object.keys(currentDraft).map(key => [key, ''])) : { ...values } } };
+      if (spec.operation === 'append') {
+        const target = spec.target_list;
+        const currentList = state.lists?.[target] || { items: [] };
+        patch.lists = { [target]: { items: [...(currentList.items || []), generatedRecord(spec.record, values)] } };
+      }
+      window.__proto.closeModal();
+      const root = document.querySelector('#toast-root');
+      root.textContent = spec.success_message || (spec.operation === 'append' ? '已创建' : '已保存');
+      root.classList.add('show'); setTimeout(() => root.classList.remove('show'), 1800);
+      return patch;
+    }
+    const actions = {"submit:create-form": ({ values, state }) => handleGeneratedSubmit("create", values, state)};
+    document.querySelector('#app').innerHTML = Object.values(pages).map(page => page.render(initialState)).join('');
+    document.querySelector('#modal-root').innerHTML = Object.values(modals).map(modal => modal.render(initialState)).join('');
   </script>
-
   <script src="prototype-runtime.js"></script>
   <script>
-    // ========== 6. 运行时初始化 ==========
-    const submitHandlers = Object.fromEntries(
-      Object.entries(actions)
-        .filter(([name]) => name.startsWith('submit:'))
-        .map(([name, handler]) => [name.slice('submit:'.length), handler])
-    );
-
+    const submitHandlers = Object.fromEntries(Object.entries(actions).filter(([name]) => name.startsWith('submit:')).map(([name, handler]) => [name.slice(7), handler]));
     window.__proto.init({
-      initialState: {
-        ...initialState,
-        route: { pageId: initialState.currentPage, params: {} },
-      },
+      initialState: { ...initialState, route: { pageId: initialState.currentPage, params: {} } },
       submitHandlers,
+      listRenderers,
       render: (state) => {
         document.body.dataset.annoPage = state.route.pageId;
+        document.querySelectorAll('[data-route-context]').forEach(region => {
+          const active = region.closest('[data-page]')?.dataset.page === state.route.pageId;
+          const entries = active ? Object.entries(state.route.params || {}) : [];
+          region.hidden = !entries.length;
+          region.textContent = entries.length ? `当前记录：${entries.map(([key, value]) => `${key}=${value}`).join(' · ')}` : '';
+        });
+        document.querySelectorAll('[data-tab-button]').forEach(button => { const [page, tab] = button.dataset.tabButton.split(':'); button.classList.toggle('active', state.activeTabs?.[page] === tab); });
+        document.querySelectorAll('[data-tab-panel]').forEach(panel => { const [page, tab] = panel.dataset.tabPanel.split(':'); panel.hidden = state.activeTabs?.[page] !== tab; });
         requestAnimationFrame(() => window.AnnotationRuntime?.refresh());
-      },
+      }
     });
+    window.__vprdUiProfile = {
+      apply: (nextProfile, pageId) => applyUiProfile(uiClone(nextProfile), pageId),
+      describe: pageId => describeUiProfile(pageId),
+      getInitial: () => uiClone(initialUiProfile)
+    };
+    applyUiProfile(initialUiProfile, initialState.currentPage);
   </script>
-
   <script>/*__ANNOTATION_RUNTIME__*/</script>
   <script>
-    // ========== 7. 标注初始化 ==========
     const ANNOTATIONS = __ANNOTATION_DATA__;
-    window.AnnotationRuntime.init({
-      annotations: ANNOTATIONS,
-      pageId: () => window.__proto.state.route.pageId,
-    });
+    window.AnnotationRuntime.init({ annotations: ANNOTATIONS, pageId: () => window.__proto.state.route.pageId });
   </script>
 </body>
 </html>

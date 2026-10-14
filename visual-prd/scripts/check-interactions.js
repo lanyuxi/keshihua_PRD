@@ -229,6 +229,15 @@ function parseAttributes(tagSource) {
   return attributes;
 }
 
+function decodeHtml(value) {
+  return String(value || "")
+    .replace(/&quot;/g, '"')
+    .replace(/&#x27;|&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&");
+}
+
 function extractInteractionPoints(source) {
   const points = [];
   const tagPattern = /<([A-Za-z][\w:-]*)\b[^>]*>/g;
@@ -238,10 +247,15 @@ function extractInteractionPoints(source) {
     if (tag === "script" || tag === "style") continue;
     const attributes = parseAttributes(match[0]);
     const action = attributes.get("data-action");
+    const runtimeBinding = ["data-filter", "data-sort", "data-search", "data-model"]
+      .find(name => attributes.has(name));
     const isNativeInteractive = tag === "button" || tag === "a";
-    if (action === undefined && !isNativeInteractive) continue;
+    if (action === undefined && !runtimeBinding && !isNativeInteractive) continue;
     points.push({
       action,
+      runtimeBinding,
+      bindingValue: runtimeBinding ? attributes.get(runtimeBinding) : undefined,
+      params: attributes.get("data-params"),
       tag,
       href: attributes.has("href") ? attributes.get("href") : undefined,
       line: lineNumber(source, match.index),
@@ -280,7 +294,16 @@ function checkAction(point, context) {
   }
   if (type === "navigate") {
     if (!payload) return "navigate 缺少目标页面";
-    return context.pageKeys.has(payload) ? null : `pages 中不存在页面 “${payload}”`;
+    if (!context.pageKeys.has(payload)) return `pages 中不存在页面 “${payload}”`;
+    if (point.params !== undefined) {
+      try {
+        const value = JSON.parse(decodeHtml(point.params));
+        if (!value || Array.isArray(value) || typeof value !== "object") return "data-params 必须是 JSON object";
+      } catch (_) {
+        return "data-params 不是有效 JSON";
+      }
+    }
+    return null;
   }
   if (type === "open-modal") {
     if (!payload) return "open-modal 缺少目标弹层";
@@ -337,6 +360,10 @@ function inspect(source) {
       else bound += 1;
       return;
     }
+    if (point.runtimeBinding) {
+      bound += 1;
+      return;
+    }
     if (point.href !== undefined) {
       const href = point.href.trim();
       if (!href || href === "#" || /^javascript:/i.test(href)) {
@@ -344,8 +371,33 @@ function inspect(source) {
       } else bound += 1;
       return;
     }
-    failures.push({ ...point, reason: "缺少 data-action 或 href" });
+    failures.push({ ...point, reason: "缺少 data-action、运行时数据绑定或 href" });
   });
+
+  const tabCounts = new Map();
+  for (const match of source.matchAll(/\bdata-tab-(?:button|panel)\s*=\s*["']([^"']+)["']/g)) {
+    const key = match[1];
+    tabCounts.set(key, (tabCounts.get(key) || 0) + 1);
+  }
+  tabCounts.forEach((count, key) => {
+    if (count !== 2) failures.push({ tag: "tab", line: 1, source: key, reason: `Tab 标识应各有一个按钮和面板，实际命中 ${count} 次` });
+  });
+
+  points.filter(point => point.runtimeBinding === "data-sort").forEach(point => {
+    const key = String(point.bindingValue || "").trim();
+    if (!key) return;
+    const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    if (!new RegExp(`\\bdata-${escaped}\\s*=`, "i").test(source)) {
+      failures.push({ ...point, reason: `排序字段 “${key}” 没有对应的 data-${key} 数据源` });
+    }
+  });
+
+  for (const match of source.matchAll(/<[^>]+\bdata-list-item\b[^>]*>[\s\S]*?<button\b([^>]*)\bdata-action=["']navigate:[^"']+["']([^>]*)>/gi)) {
+    const attributes = parseAttributes(`<button ${match[1]} ${match[2]}>`);
+    if (!attributes.has("data-params")) {
+      failures.push({ tag: "button", line: lineNumber(source, match.index), source: match[0].slice(0, 160), reason: "列表行跳转缺少 data-params，无法携带记录上下文" });
+    }
+  }
 
   return {
     total: points.length,

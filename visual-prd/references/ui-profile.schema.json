@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "visual-prd-ui-profile-1.0",
+  "title": "Visual PRD UI Profile",
+  "type": "object",
+  "required": ["schema_version", "id", "name"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "id": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*$" },
+    "name": { "type": "string", "minLength": 1 },
+    "tokens": { "type": "object" },
+    "components": { "type": "object" },
+    "page_overrides": {
+      "type": "object",
+      "description": "按页面 ID 保存局部 tokens 和 components 覆盖。",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "tokens": { "type": "object" },
+          "components": { "type": "object" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

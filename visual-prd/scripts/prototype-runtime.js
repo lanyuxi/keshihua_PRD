@@ -27,6 +27,7 @@
     pageTransition: "fade",
     render: null,
     renderers: {},
+    listRenderers: {},
     validators: {},
     submitHandlers: {},
     modalRenderers: {}
@@ -83,6 +84,20 @@
     Object.entries(patch).forEach(([key, nextValue]) => {
       const path = prefix ? `${prefix}.${key}` : key;
       const previousValue = target[key];
+      // A route is an atomic browser-history snapshot. Deep-merging it would
+      // keep query parameters from the page we just left (for example a
+      // detail taskId leaking back into the list page after browser Back).
+      if (path === "route" && isPlainObject(nextValue)) {
+        const normalizedRoute = {
+          pageId: String(nextValue.pageId || ""),
+          params: isPlainObject(nextValue.params) ? cloneValue(nextValue.params) : {}
+        };
+        if (JSON.stringify(previousValue) !== JSON.stringify(normalizedRoute)) {
+          target[key] = normalizedRoute;
+          changedPaths.add(path);
+        }
+        return;
+      }
       if (isPlainObject(nextValue) && isPlainObject(previousValue)) {
         mergeState(previousValue, nextValue, path, changedPaths);
         return;
@@ -259,6 +274,10 @@
     document.querySelectorAll("[data-list]").forEach(list => {
       const listId = list.dataset.list;
       const listState = readPath(state, `lists.${listId}`, {});
+      const listRenderer = config.listRenderers?.[listId];
+      if (typeof listRenderer === "function") {
+        listRenderer(list, Array.isArray(listState.items) ? listState.items : [], state);
+      }
       const filters = listState.filters || {};
       const search = String(listState.search || "").trim().toLocaleLowerCase();
       const sort = listState.sort || {};
@@ -272,6 +291,10 @@
         });
         const searchText = (item.dataset.searchText || item.textContent || "").toLocaleLowerCase();
         item.hidden = !(matchesFilters && (!search || searchText.includes(search)));
+      });
+
+      document.querySelectorAll(`[data-empty-for="${cssEscape(listId)}"]`).forEach(empty => {
+        empty.hidden = items.some(item => !item.hidden);
       });
 
       if (sort.key) {
@@ -292,7 +315,7 @@
       document.querySelectorAll(`[data-list-target="${cssEscape(listId)}"][data-filter]`).forEach(control => {
         if (!control.matches("button, [role='button']")) return;
         const [key, value = control.value] = control.dataset.filter.split("=");
-        const active = String(filters[key] ?? "") === String(value ?? "");
+        const active = String(filters[key] ?? "all") === String(value ?? "");
         control.classList.toggle("active", active);
         control.setAttribute("aria-pressed", String(active));
       });
@@ -356,6 +379,10 @@
     return document.querySelector("[data-page]")?.dataset.page || "home";
   }
 
+  function pageExists(pageId) {
+    return Boolean(document.querySelector(`[data-page="${cssEscape(pageId)}"]`));
+  }
+
   function isEmbeddedDocument() {
     return location.protocol === "about:" && global.parent && global.parent !== global;
   }
@@ -373,6 +400,10 @@
   function navigate(pageId, params = {}) {
     const normalizedPageId = String(pageId || "").trim();
     if (!normalizedPageId) throw new TypeError("navigate(pageId) requires a page ID.");
+    if (!pageExists(normalizedPageId)) {
+      console.warn(`[PrototypeRuntime] Page not found: ${normalizedPageId}`);
+      return null;
+    }
     const route = { pageId: normalizedPageId, params: cloneValue(params || {}) };
     setState({ route });
     const nextHash = encodeRoute(route.pageId, route.params);
@@ -385,7 +416,14 @@
 
   function syncRouteFromHash() {
     const route = decodeRoute(location.hash);
-    if (route) setState({ route });
+    if (route && pageExists(route.pageId)) {
+      setState({ route });
+      return;
+    }
+    const fallback = { pageId: firstPageId(), params: {} };
+    setState({ route: fallback });
+    try { history.replaceState(null, "", encodeRoute(fallback.pageId, fallback.params)); }
+    catch (_) { /* keep in-memory routing when History is unavailable */ }
   }
 
   function modalElement(modalId) {
@@ -584,7 +622,8 @@
     const result = Object.fromEntries(new FormData(form).entries());
     form.querySelectorAll("[data-model]").forEach(field => {
       const value = inputValue(field);
-      if (value !== undefined) result[field.dataset.model] = value;
+      const key = field.name || field.dataset.model;
+      if (value !== undefined && key) result[key] = value;
     });
     return result;
   }
@@ -730,6 +769,15 @@
       if (event.key === "Escape" && modalStack.length) {
         event.preventDefault();
         closeModal();
+        return;
+      }
+      if (!["Enter", " "].includes(event.key) || !(event.target instanceof Element)) return;
+      const filter = event.target.closest("[role='button'][data-filter]");
+      const sort = event.target.closest("[role='button'][data-sort]");
+      if (filter || sort) {
+        event.preventDefault();
+        if (filter) updateFilter(filter);
+        else updateSort(sort);
       }
     }, { signal });
 
@@ -753,7 +801,7 @@
       @keyframes proto-page-slide { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: translateX(0); } }
       .proto-page-enter-fade { animation: proto-page-fade 180ms ease both; }
       .proto-page-enter-slide { animation: proto-page-slide 220ms ease both; }
-      .proto-modal-backdrop { position: fixed; inset: 0; opacity: 0; background: rgba(15, 23, 42, .46); transition: opacity 180ms ease; }
+      .proto-modal-backdrop { position: fixed; inset: 0; opacity: 0; background: var(--backdrop, rgba(15, 23, 42, .46)); transition: opacity 180ms ease; }
       .proto-modal-backdrop.open { opacity: 1; }
       .proto-modal-layer { position: fixed; opacity: 0; pointer-events: none; transition: opacity 180ms ease, transform 180ms ease; }
       .proto-modal-layer.open { opacity: 1; pointer-events: auto; }
@@ -763,7 +811,7 @@
       .proto-modal-layer[data-modal-type="drawer"].open { transform: translateX(0); }
       .proto-modal-layer[data-modal-type="popover"] { transform: translateY(5px); }
       .proto-modal-layer[data-modal-type="popover"].open { transform: translateY(0); }
-      .proto-field-error { margin-top: 5px; color: #c03245; font: 12px/1.4 system-ui, sans-serif; }
+      .proto-field-error { margin-top: 5px; color: var(--danger, #c03245); font: 12px/1.4 var(--font-family, system-ui, sans-serif); }
     `;
     (document.head || document.documentElement).appendChild(style);
   }
@@ -773,6 +821,7 @@
       ...config,
       ...options,
       renderers: { ...config.renderers, ...(options.renderers || {}) },
+      listRenderers: { ...config.listRenderers, ...(options.listRenderers || {}) },
       validators: { ...config.validators, ...(options.validators || {}) },
       submitHandlers: { ...config.submitHandlers, ...(options.submitHandlers || {}) },
       modalRenderers: { ...config.modalRenderers, ...(options.modalRenderers || {}) }
@@ -784,11 +833,18 @@
       hydrateState();
       bindEvents();
       const route = decodeRoute(location.hash);
-      if (route) mergeState(state, { route }, "", new Set());
+      if (route && pageExists(route.pageId)) mergeState(state, { route }, "", new Set());
       else {
-        const pageId = state.route?.pageId || firstPageId();
-        state.route = { pageId, params: state.route?.params || {} };
-        if (!notifyParentRoute(state.route, true)) {
+        const configuredRoute = config.initialState?.route;
+        const pageId = pageExists(configuredRoute?.pageId) ? configuredRoute.pageId : firstPageId();
+        state.route = {
+          pageId,
+          params: isPlainObject(configuredRoute?.params) ? cloneValue(configuredRoute.params) : {}
+        };
+        // Inside the review container the parent URL is authoritative. Do not
+        // overwrite it with a persisted iframe route during startup; the
+        // parent will immediately send its current hash route after load.
+        if (!isEmbeddedDocument()) {
           try { history.replaceState(null, "", encodeRoute(pageId, state.route.params)); }
           catch (_) { /* keep in-memory routing when History is unavailable */ }
         }

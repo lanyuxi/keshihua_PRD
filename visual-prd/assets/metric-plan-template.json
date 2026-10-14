@@ -1,0 +1,9 @@
+{
+  "schema_version": "1.0",
+  "product": "待填写产品名称",
+  "applicability": "PENDING",
+  "applicability_reason": "待确认是否需要衡量功能成效和新增行为采集",
+  "metrics": [],
+  "events": [],
+  "open_questions": ["本期需要衡量哪个产品目标，以及现有数据源能否支持？"]
+}

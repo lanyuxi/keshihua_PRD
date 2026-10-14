@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0",
+  "mode": "enhance",
+  "output_dir": "dist",
+  "inputs": {
+    "prd": "prd.md",
+    "prototype": "prototype.html",
+    "annotations": "annotations.json"
+  },
+  "prototype": {
+    "page_id": "list"
+  }
+}

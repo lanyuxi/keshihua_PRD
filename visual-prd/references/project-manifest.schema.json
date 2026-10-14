@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "visual-prd-project-1.0",
+  "title": "Visual PRD Project Manifest",
+  "type": "object",
+  "required": ["schema_version", "mode", "output_dir", "inputs"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "mode": { "enum": ["assemble", "enhance", "generate"] },
+    "output_dir": { "type": "string", "minLength": 1 },
+    "inputs": { "type": "object" },
+    "prototype": { "type": "object" }
+  },
+  "additionalProperties": false
+}
