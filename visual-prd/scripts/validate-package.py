@@ -103,7 +103,7 @@ def validate_frontmatter() -> None:
     require(author == expected_author, "metadata.author does not match the declared original author")
     require(fields.get("display_name_zh", "").strip('"\'') == "可视化产品需求设计", "Chinese display name is missing")
     require(fields.get("icon", "").strip('"\'') == "assets/skill-icon.png", "metadata.icon is invalid")
-    require(version == "4.1.10", "visual-prd version is not 4.1.10")
+    require(version == "4.1.11", "visual-prd version is not 4.1.11")
     for target in re.findall(r"\]\(([^)]+)\)", source):
         if "://" not in target and not target.startswith("#"):
             require((SKILL_ROOT / target).exists(), f"Broken local reference: {target}")

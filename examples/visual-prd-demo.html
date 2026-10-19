@@ -442,16 +442,13 @@
         <div class="panel-inner">
           <header class="panel-header">
             <div>
-              <p class="eyebrow">Cross-page PRD</p>
               <h1 class="panel-title">跨页面产品说明</h1>
             </div>
-            <span class="scope-chip">Markdown</span>
           </header>
           <div class="panel-scroll">
             <nav id="doc-navigation" class="doc-navigation" aria-label="产品说明章节"></nav>
             <div class="doc-toolbar">
               <span id="doc-context" class="doc-context">全局规则</span>
-              <button id="save-now" class="button" type="button">立即保存</button>
               <div class="segmented" aria-label="文档显示模式">
                 <button type="button" data-doc-mode="preview" aria-pressed="true">预览</button>
                 <button type="button" data-doc-mode="edit" aria-pressed="false">编辑</button>
@@ -5730,10 +5727,6 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
           });
         }
         $("#disk-save").addEventListener("click", authorizeDiskSave);
-        $("#save-now").addEventListener("click", async () => {
-          if (!fileHandle || await fileHandle.queryPermission({ mode: "readwrite" }) !== "granted") await authorizeDiskSave();
-          else await flushSave();
-        });
         $("#annotation-editor-close").addEventListener("click", async () => {
           await flushSave();
           if (fileHandle && diskRevision < revision) { showToast("写回尚未成功，请检查顶部保存状态"); return; }
