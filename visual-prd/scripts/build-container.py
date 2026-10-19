@@ -334,6 +334,8 @@ def build(
     )
     page = page.replace("__VISUAL_PRD_DEVELOPER_BASE64__", encode_payload(developer_source(prototype_source)), 1)
     page = page.replace("__VISUAL_PRD_FLOWS_BASE64__", encode_payload(flows_markdown), 1)
+    logo = base64.b64encode((SKILL_ROOT / "assets/brand-logo.png").read_bytes()).decode("ascii")
+    page = page.replace('src="brand-logo.png"', f'src="data:image/png;base64,{logo}"', 1)
     unresolved = [
         marker for marker in (
             'const PROTOTYPE_PAYLOAD = "__VISUAL_PRD_PROTOTYPE_BASE64__"',

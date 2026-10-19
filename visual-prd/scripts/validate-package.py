@@ -40,6 +40,7 @@ REQUIRED_FILES = (
     "assets/ui-profile-template.json",
     "assets/project-manifest-template.json",
     "assets/skill-icon.png",
+    "assets/brand-logo.png",
     "assets/mermaid.min.js",
     "assets/mermaid-LICENSE.txt",
     "references/editing-and-export.md",
@@ -53,6 +54,7 @@ REQUIRED_FILES = (
     "scripts/build-review.py",
     "scripts/check-flow-build.py",
     "scripts/check-draft-compatibility.js",
+    "scripts/check-save-behavior.js",
     "scripts/validate-review-artifact.py",
     "scripts/prepare-prototype.py",
     "scripts/project_manifest.py",
@@ -99,7 +101,7 @@ def validate_frontmatter() -> None:
     require(author == expected_author, "metadata.author does not match the declared original author")
     require(fields.get("display_name_zh", "").strip('"\'') == "可视化产品需求设计", "Chinese display name is missing")
     require(fields.get("icon", "").strip('"\'') == "assets/skill-icon.png", "metadata.icon is invalid")
-    require(version == "4.1.6", "visual-prd version is not 4.1.6")
+    require(version == "4.1.7", "visual-prd version is not 4.1.7")
     for target in re.findall(r"\]\(([^)]+)\)", source):
         if "://" not in target and not target.startswith("#"):
             require((SKILL_ROOT / target).exists(), f"Broken local reference: {target}")
@@ -566,6 +568,8 @@ def main() -> None:
     require(flows.returncode == 0, flows.stdout + flows.stderr)
     drafts = subprocess.run(["node", str(SKILL_ROOT / "scripts/check-draft-compatibility.js")], capture_output=True, text=True, check=False)
     require(drafts.returncode == 0, drafts.stdout + drafts.stderr)
+    saves = subprocess.run(["node", str(SKILL_ROOT / "scripts/check-save-behavior.js")], capture_output=True, text=True, check=False)
+    require(saves.returncode == 0, saves.stdout + saves.stderr)
     print(f"PASS: {SKILL_ROOT.name} is complete, self-contained, syntactically valid, and smoke-tested")
 
 

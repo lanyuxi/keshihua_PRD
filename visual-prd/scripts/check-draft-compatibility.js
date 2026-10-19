@@ -14,7 +14,7 @@ const original = {docs: {architecture: '原版已编辑需求'}, activeDoc: 'arc
 async function load(local, database, embedded = null) {
   const state = {docs: {architecture: '初始需求'}, mode: 'review', leftWidth: 360, rightWidth: 360};
   const nodes = {'#review-state': {textContent: JSON.stringify(embedded)}, '#disk-save': {}, '#save-state': {}};
-  const context = vm.createContext({JSON, Number, window: {showSaveFilePicker() {}}, state, revision: 0, fileHandle: null, STORAGE_KEY: 'fixture', $: key => nodes[key], localStorage: {getItem: () => JSON.stringify(local)}, storedValue: async key => key === 'fixture' ? database : null});
+  const context = vm.createContext({JSON, Number, window: {showOpenFilePicker() {}}, state, revision: 0, fileHandle: null, STORAGE_KEY: 'fixture', $: key => nodes[key], localStorage: {getItem: () => JSON.stringify(local)}, storedValue: async key => key === 'fixture' ? database : null});
   vm.runInContext(loader + ';this.load = loadPersistedState;', context);
   await context.load();
   return state;

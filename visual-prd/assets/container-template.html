@@ -9,7 +9,7 @@
     :root {
       --left-width: 360px;
       --right-width: 360px;
-      --header-height: 58px;
+      --header-height: 72px;
       --ink: #172033;
       --muted: #667085;
       --line: #e4e8ef;
@@ -52,16 +52,7 @@
     }
 
     .brand { display: flex; align-items: center; gap: 11px; min-width: 0; }
-    .brand-mark {
-      display: grid;
-      place-items: center;
-      width: 30px;
-      height: 30px;
-      border-radius: 9px;
-      background: linear-gradient(145deg, #7c77ff, #4d46c8);
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.22);
-      font-weight: 800;
-    }
+    .brand-mark { display: block; width: 40px; height: 40px; object-fit: contain; flex-shrink: 0; }
     .brand-copy { min-width: 0; }
     .brand-title { font-size: 14px; font-weight: 750; letter-spacing: .01em; }
     .brand-subtitle { margin-top: 1px; color: #aeb4ca; font-size: 11px; }
@@ -97,7 +88,7 @@
 
     .workspace {
       display: grid;
-      grid-template-columns: var(--left-width) 7px minmax(480px, 1fr) 7px var(--right-width);
+      grid-template-columns: var(--left-width) 7px minmax(0, 1fr) 7px var(--right-width);
       min-height: 0;
       overflow: hidden;
     }
@@ -381,6 +372,8 @@
     #annotation-editor-dialog h2 { margin: 0 0 12px; font-size: 18px; }
     #annotation-editor-dialog label { display: block; margin: 12px 0; font-size: 12px; }
     #annotation-editor-dialog input, #annotation-editor-dialog textarea { display: block; width: 100%; margin-top: 6px; padding: 10px; border: 1px solid var(--line); border-radius: 7px; font: 13px/1.6 monospace; }
+    .annotation-editor-actions { display: flex; justify-content: flex-end; margin-top: 16px; }
+    #annotation-editor-close { background: #2563eb; border-color: #2563eb; color: #fff; }
     .product-hidden .workspace { grid-template-columns: 0 0 minmax(0, 1fr) 7px var(--right-width); }
     .annotations-hidden .workspace { grid-template-columns: var(--left-width) 7px minmax(0, 1fr) 0 0; }
     .product-hidden.annotations-hidden .workspace { grid-template-columns: 0 0 minmax(0, 1fr) 0 0; }
@@ -402,7 +395,7 @@
 
     @media (max-width: 980px) {
       :root { --left-width: 300px; --right-width: 300px; }
-      .workspace { grid-template-columns: var(--left-width) 6px minmax(420px, 1fr) 6px var(--right-width); }
+      .workspace { grid-template-columns: var(--left-width) 6px minmax(0, 1fr) 6px var(--right-width); }
       .brand-subtitle, .save-state { display: none; }
     }
   </style>
@@ -411,7 +404,7 @@
   <div id="app" class="app-shell" data-visual-prd-container="standard">
     <header class="topbar">
       <div class="brand">
-        <div class="brand-mark" aria-hidden="true">V</div>
+        <img class="brand-mark" src="brand-logo.png" width="40" height="40" alt="Visual PRD">
         <div class="brand-copy">
           <div class="brand-title">Visual PRD</div>
           <div class="brand-subtitle">原型、需求与标注的同一事实源</div>
@@ -430,7 +423,7 @@
         <button id="toggle-product" class="button button-dark" type="button" aria-expanded="true">关闭产品说明</button>
         <button id="toggle-annotations" class="button button-dark" type="button" aria-expanded="true">关闭页面标注</button>
         <button id="download-all" class="button button-dark" type="button">下载全部页面</button>
-        <button id="disk-save" class="button button-dark" type="button" title="选择当前 HTML 文件并授权写回；也可选择新文件保存评审副本">授权自动写回</button>
+        <button id="disk-save" class="button button-dark" type="button" title="选择正在编辑的已有 HTML 文件并授权直接写回">授权自动写回</button>
       </div>
     </header>
 
@@ -448,6 +441,7 @@
             <nav id="doc-navigation" class="doc-navigation" aria-label="产品说明章节"></nav>
             <div class="doc-toolbar">
               <span id="doc-context" class="doc-context">全局规则</span>
+              <button id="save-now" class="button" type="button">立即保存</button>
               <div class="segmented" aria-label="文档显示模式">
                 <button type="button" data-doc-mode="preview" aria-pressed="true">预览</button>
                 <button type="button" data-doc-mode="edit" aria-pressed="false">编辑</button>
@@ -566,9 +560,9 @@
     <label>标题<input id="annotation-title" type="text"></label>
     <label>内容（Markdown，可直接粘贴图片）<textarea id="annotation-body" rows="8"></textarea></label>
     <label>业务规则（每行一条）<textarea id="annotation-rules" rows="3"></textarea></label>
-    <p class="doc-context">修改自动保存。首次点击顶部“授权自动写回”，选择当前 HTML；显示“已写回”后可关闭。</p>
+    <p class="doc-context">修改立即保存。首次点击“授权自动写回”选择正在编辑的已有 HTML；显示“已自动写回”后可关闭。</p>
     <div id="annotation-editor-preview" class="markdown-preview"></div>
-    <button id="annotation-editor-close" class="button" type="button">完成</button>
+    <div class="annotation-editor-actions"><button id="annotation-editor-close" class="button" type="button">确定</button></div>
   </dialog>
   <dialog id="flow-viewer" aria-labelledby="flow-viewer-title">
     <header class="flow-viewer-toolbar">
@@ -717,7 +711,6 @@
       const popover = $("#annotation-popover");
       const editor = $("#markdown-editor");
       const preview = $("#markdown-preview");
-      let saveTimer = 0;
       let editingAnnotationId = "";
       let fileHandle = null;
       let revision = 0;
@@ -978,8 +971,8 @@
             if (saved[key] !== undefined) state[key] = saved[key];
           }
         }
-        $("#disk-save").textContent = window.showSaveFilePicker ? "授权自动写回" : "下载评审副本";
-        if (window.showSaveFilePicker && fileHandle) $("#disk-save").textContent = "重新授权写回";
+        $("#disk-save").textContent = window.showOpenFilePicker ? "授权自动写回" : "下载评审副本";
+        if (window.showOpenFilePicker && fileHandle) $("#disk-save").textContent = "重新授权写回";
         $("#save-state").textContent = "已载入文档；请授权磁盘写回";
         if (fileHandle && await fileHandle.queryPermission({ mode: "readwrite" }) === "granted") {
           $("#disk-save").textContent = "更换写回文件";
@@ -990,19 +983,17 @@
       function persistState() {
         state.savedAt = new Date().toISOString();
         revision += 1;
-        clearTimeout(saveTimer);
         $("#save-state").textContent = "保存中…";
-        saveTimer = setTimeout(flushSave, 320);
+        return flushSave();
       }
 
       function flushSave() {
-        clearTimeout(saveTimer);
-        saveTimer = 0;
         const currentRevision = revision;
         const targetHandle = fileHandle;
-        const snapshot = JSON.parse(JSON.stringify(reviewSnapshot()));
-        const html = reviewHtml(snapshot);
         saveQueue = saveQueue.catch(() => {}).then(async () => {
+          if (currentRevision !== revision) return;
+          const snapshot = JSON.parse(JSON.stringify(reviewSnapshot()));
+          const html = reviewHtml(snapshot);
           let draftSaved = false;
           try { await storedValue(STORAGE_KEY, snapshot); draftSaved = true; }
           catch (_) {
@@ -1032,7 +1023,7 @@
 
       async function authorizeDiskSave() {
         try {
-          if (!window.showSaveFilePicker) {
+          if (!window.showOpenFilePicker) {
             downloadBlob(new Blob([reviewHtml()], { type: "text/html;charset=utf-8" }), "visual-prd-review.html");
             showToast("此浏览器不支持自动写回，请使用 Chrome/Edge；当前已下载评审副本");
             return;
@@ -1043,12 +1034,16 @@
               return;
             }
           } else {
-            fileHandle = await window.showSaveFilePicker({ suggestedName: decodeURIComponent(location.pathname.split("/").pop()) || "visual-prd.html",
-              types: [{ description: "可视化 PRD HTML", accept: { "text/html": [".html"] } }] });
+            const [selected] = await window.showOpenFilePicker({ multiple: false,
+              types: [{ description: "正在编辑的已有 PRD HTML", accept: { "text/html": [".html"] } }] });
+            if (await selected.requestPermission({ mode: "readwrite" }) !== "granted") {
+              showToast("未获写回授权，请重新选择当前 HTML；已有写回目标保持不变");
+              return;
+            }
+            fileHandle = selected;
           }
           await storedValue(STORAGE_KEY + ":file", fileHandle).catch(() => {});
-          persistState();
-          await flushSave();
+          await persistState();
         } catch (error) {
           if (error.name !== "AbortError") showToast("授权失败：" + error.message);
         }
@@ -1293,6 +1288,22 @@
         if (route) frame.contentWindow?.postMessage({ type: "visual-prd:prototype-navigate", route }, "*");
       }
 
+      function fitPrototypeViewport(doc) {
+        // Adapt only the outer layout in the review working document; keep business widgets intact.
+        const root = doc.querySelector("[data-vprd-responsive-root]") ||
+          doc.body.querySelector(":scope > .shell, :scope > .app-shell, :scope > .layout, :scope > .app, :scope > #app");
+        doc.documentElement.style.setProperty("width", "100%", "important");
+        for (const node of [doc.documentElement, doc.body, root].filter(Boolean)) {
+          node.style.setProperty("min-width", "0", "important");
+          node.style.setProperty("max-width", "none", "important");
+        }
+        doc.body.style.setProperty("width", "auto", "important");
+        if (root) {
+          root.style.setProperty("width", "100%", "important");
+          root.style.setProperty("box-sizing", "border-box", "important");
+        }
+      }
+
       function wirePrototype() {
         const doc = frameDocument();
         if (!doc?.body) return;
@@ -1357,6 +1368,7 @@
           // Scroll, resize and the prototype's own annotation runtime still keep positions fresh.
         }
         uiConfigurator?.apply();
+        fitPrototypeViewport(doc);
         syncAnnotationDefinitions();
         renderPageCatalog();
         syncPrototypeContext();
@@ -1612,7 +1624,15 @@
           });
         }
         $("#disk-save").addEventListener("click", authorizeDiskSave);
-        $("#annotation-editor-close").addEventListener("click", () => $("#annotation-editor-dialog").close());
+        $("#save-now").addEventListener("click", async () => {
+          if (!fileHandle || await fileHandle.queryPermission({ mode: "readwrite" }) !== "granted") await authorizeDiskSave();
+          else await flushSave();
+        });
+        $("#annotation-editor-close").addEventListener("click", async () => {
+          await flushSave();
+          if (fileHandle && diskRevision < revision) { showToast("写回尚未成功，请检查顶部保存状态"); return; }
+          $("#annotation-editor-dialog").close();
+        });
         $("#annotation-editor-dialog").addEventListener("close", () => { flushSave(); editingAnnotationId = ""; });
         for (const id of ["title", "body", "rules"]) $("#annotation-" + id).addEventListener("input", updateEditedAnnotation);
         $("#annotation-body").addEventListener("paste", event => {
@@ -1654,7 +1674,7 @@
             downloadBlob(zipPages(pageCatalog.map((page, index) => ({ name: pageFilename(page, index), html: developerHtml(page) }))), "prototype-pages.zip");
           } catch (error) { showToast(error.message); }
         });
-        document.addEventListener("visibilitychange", () => { if (document.hidden && saveTimer) flushSave(); });
+        document.addEventListener("visibilitychange", () => { if (document.hidden) flushSave(); });
         window.addEventListener("beforeunload", event => {
           if (revision > diskRevision) { event.preventDefault(); event.returnValue = "修改尚未写回磁盘"; }
         });
