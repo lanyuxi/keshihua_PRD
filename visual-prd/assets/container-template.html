@@ -34,7 +34,7 @@
 
     .app-shell {
       display: grid;
-      grid-template-rows: var(--header-height) minmax(0, 1fr);
+      grid-template-rows: var(--header-height) auto minmax(0, 1fr);
       height: 100vh;
     }
 
@@ -55,7 +55,6 @@
     .brand-mark { display: block; width: 40px; height: 40px; object-fit: contain; flex-shrink: 0; }
     .brand-copy { min-width: 0; }
     .brand-title { font-size: 14px; font-weight: 750; letter-spacing: .01em; }
-    .brand-subtitle { margin-top: 1px; color: #aeb4ca; font-size: 11px; }
     .topbar-actions { display: flex; align-items: center; gap: 8px; }
     .save-state { color: #aeb4ca; font-size: 12px; white-space: nowrap; }
 
@@ -189,34 +188,32 @@
     .markdown-preview tbody tr:nth-child(even) { background: #fafbfc; }
 
     .canvas-panel { position: relative; min-width: 0; min-height: 0; background: var(--canvas); }
-    .canvas-shell { display: grid; grid-template-rows: 46px minmax(0, 1fr); height: 100%; }
-    .canvas-toolbar {
+    .canvas-shell { display: grid; grid-template-rows: minmax(0, 1fr); height: 100%; }
+    .review-toolbar {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      padding: 0 13px;
+      min-height: 46px;
+      padding: 8px 14px;
       border-bottom: 1px solid #d9dde4;
       color: var(--muted);
       background: #f8f9fb;
     }
-    .canvas-meta { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 12px; }
-    .status-dot { width: 7px; height: 7px; border-radius: 50%; background: #20a66a; box-shadow: 0 0 0 3px rgba(32,166,106,.13); }
-    .canvas-path { overflow: hidden; color: var(--ink); text-overflow: ellipsis; white-space: nowrap; }
     .scope-chip { padding: 3px 7px; border-radius: 999px; color: #4b46ad; background: #e7e6ff; font-size: 10px; font-weight: 700; }
-    .canvas-stage { position: relative; min-height: 0; padding: 18px; overflow: hidden; }
+    .canvas-stage { position: relative; min-height: 0; padding: 0; overflow: hidden; }
     .device-frame {
       position: relative;
       width: 100%;
       height: 100%;
       overflow: hidden;
-      border: 1px solid #d4d8e0;
-      border-radius: 12px;
+      border: 0;
+      border-radius: 0;
       background: #fff;
-      box-shadow: 0 12px 34px rgba(23,32,51,.11);
+      box-shadow: none;
     }
     #prototype-frame { display: block; width: 100%; height: 100%; border: 0; background: #fff; }
-    #annotation-layer { position: absolute; inset: 18px; z-index: 8; pointer-events: none; }
+    #annotation-layer { position: absolute; inset: 0; z-index: 8; pointer-events: none; }
     .anno-dot {
       position: absolute;
       display: grid;
@@ -286,8 +283,6 @@
     .floating-mode .left-panel,
     .floating-mode .right-panel,
     .floating-mode .resizer { display: none; }
-    .floating-mode .canvas-stage { padding: 24px; }
-    .floating-mode #annotation-layer { inset: 24px; }
 
     .ui-configurator {
       position: fixed;
@@ -360,7 +355,9 @@
     [data-resizer="right"] { grid-column: 4; }
     .right-panel { grid-column: 5; }
     .floating-mode .canvas-panel { grid-column: 1; }
-    .page-actions { display: flex; align-items: center; gap: 6px; }
+    .page-navigation, .page-actions { display: flex; align-items: center; gap: 6px; }
+    .page-navigation { min-width: 0; font-size: 12px; }
+    .review-toolbar .page-actions { margin-left: auto; flex-shrink: 0; }
     #page-select { max-width: 180px; }
     .annotation-heading { display: flex; align-items: start; justify-content: space-between; gap: 8px; }
     .annotation-edit { border: 0; padding: 2px 4px; color: var(--accent); background: transparent; font-size: 11px; cursor: pointer; }
@@ -396,7 +393,7 @@
     @media (max-width: 980px) {
       :root { --left-width: 300px; --right-width: 300px; }
       .workspace { grid-template-columns: var(--left-width) 6px minmax(0, 1fr) 6px var(--right-width); }
-      .brand-subtitle, .save-state { display: none; }
+      .save-state { display: none; }
     }
   </style>
 </head>
@@ -407,7 +404,6 @@
         <img class="brand-mark" src="brand-logo.png" width="40" height="40" alt="Visual PRD">
         <div class="brand-copy">
           <div class="brand-title">Visual PRD</div>
-          <div class="brand-subtitle">原型、需求与标注的同一事实源</div>
         </div>
       </div>
       <div class="topbar-actions">
@@ -426,6 +422,20 @@
         <button id="disk-save" class="button button-dark" type="button" title="选择正在编辑的已有 HTML 文件并授权直接写回">授权自动写回</button>
       </div>
     </header>
+
+    <nav class="review-toolbar" aria-label="评审页面工具栏">
+      <div class="page-navigation">
+        <label for="page-select">页面</label>
+        <button id="previous-page" class="button button-quiet" type="button" aria-label="上一页">‹</button>
+        <select id="page-select" class="button button-quiet" aria-label="当前页面"></select>
+        <button id="next-page" class="button button-quiet" type="button" aria-label="下一页">›</button>
+      </div>
+      <div class="page-actions">
+        <button id="edit-prototype" class="button button-quiet" type="button" aria-pressed="false">编辑</button>
+        <button id="download-page" class="button button-quiet" type="button">下载</button>
+        <button id="refresh-frame" class="button button-quiet" type="button" title="重新载入原型">重新载入</button>
+      </div>
+    </nav>
 
     <main class="workspace">
       <aside class="panel left-panel" aria-label="跨页面产品说明">
@@ -459,20 +469,6 @@
 
       <section class="canvas-panel" aria-label="可交互 HTML 原型画布">
         <div class="canvas-shell">
-          <header class="canvas-toolbar">
-            <div class="canvas-meta">
-              <span class="status-dot" aria-hidden="true"></span>
-              <strong id="current-page" class="canvas-path">首页</strong>
-              <span id="current-scope" class="scope-chip">页面</span>
-            </div>
-            <div class="page-actions">
-              <button id="previous-page" class="button button-quiet" type="button" aria-label="上一页">‹</button>
-              <select id="page-select" class="button button-quiet" aria-label="当前页面"></select>
-              <button id="next-page" class="button button-quiet" type="button" aria-label="下一页">›</button>
-              <button id="edit-prototype" class="button button-quiet" type="button" aria-pressed="false">编辑</button>
-              <button id="download-page" class="button button-quiet" type="button">下载</button>
-            <button id="refresh-frame" class="button button-quiet" type="button" title="重新载入原型">重新载入</button></div>
-          </header>
           <div id="canvas-stage" class="canvas-stage">
             <div class="device-frame">
               <iframe id="prototype-frame" title="交互原型" sandbox="allow-scripts allow-forms allow-modals allow-same-origin"></iframe>
@@ -1133,8 +1129,6 @@
         $("#annotation-count").textContent = `${annotations.length} 项`;
         const context = state.modalId ? `弹层 · ${state.modalId}` : state.tabId ? `页面 ${state.pageLabel} · Tab ${state.tabId}` : `页面 · ${state.pageLabel}`;
         $("#annotation-summary").textContent = context;
-        $("#current-page").textContent = state.pageLabel;
-        $("#current-scope").textContent = state.modalId ? "弹层" : state.tabId ? "Tab" : "页面";
 
         const list = $("#annotation-list");
         if (!annotations.length) {
