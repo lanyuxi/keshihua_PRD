@@ -270,6 +270,8 @@ def build(
     )
     mermaid = (SKILL_ROOT / "assets/mermaid.min.js").read_text(encoding="utf-8")
     template = template.replace("/*__MERMAID_RUNTIME__*/", mermaid.replace("</script", "<\\/script"), 1)
+    text_runtime = (SKILL_ROOT / "scripts/prototype-text-runtime.js").read_text(encoding="utf-8")
+    template = template.replace("/*__PROTOTYPE_TEXT_RUNTIME__*/", text_runtime.replace("</script", "<\\/script"), 1)
     prototype_source = prototype_path.read_text(encoding="utf-8")
     prd_markdown = prd_path.read_text(encoding="utf-8")
     flows_markdown = flows_path.read_text(encoding="utf-8") if flows_path else ""

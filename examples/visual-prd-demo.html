@@ -469,6 +469,7 @@
               <button id="previous-page" class="button button-quiet" type="button" aria-label="上一页">‹</button>
               <select id="page-select" class="button button-quiet" aria-label="当前页面"></select>
               <button id="next-page" class="button button-quiet" type="button" aria-label="下一页">›</button>
+              <button id="edit-prototype" class="button button-quiet" type="button" aria-pressed="false">编辑</button>
               <button id="download-page" class="button button-quiet" type="button">下载</button>
             <button id="refresh-frame" class="button button-quiet" type="button" title="重新载入原型">重新载入</button></div>
           </header>
@@ -981,6 +982,165 @@
     </header>
     <div id="flow-viewport"><img id="flow-viewer-image" alt="流程图全屏预览"></div>
   </dialog>
+  <script>(function installPrototypeText(global) {
+  "use strict";
+  const excluded = 'script,style,noscript,[data-vprd-text-editor],#visual-prd-annotation-runtime';
+  const textNodes = element => [...element.childNodes].filter(node => node.nodeType === 3);
+
+  function installGuard(win) {
+    if (win.__visualPrdCopyGuard) return win.__visualPrdCopyGuard;
+    const guard = {enabled: false};
+    for (const type of ['click', 'pointerdown', 'pointerup', 'mousedown', 'mouseup', 'dblclick', 'keydown', 'keypress', 'keyup', 'submit']) {
+      const handler = type === 'click' ? 'click' : type.startsWith('key') ? 'keydown' : 'pointerdown';
+      win.addEventListener(type, event => {if (guard.enabled) guard[handler]?.(event);}, true);
+    }
+    win.__visualPrdCopyGuard = guard;
+    return guard;
+  }
+
+  function apply(doc, edits) {
+    function resolve(edit) {
+      let element;
+      try {element = doc.querySelector(edit.selector);} catch (_) {return null;}
+      if (!element) return null;
+      if (edit.attribute) return ['placeholder', 'value'].includes(edit.attribute) ? element : null;
+      return [...element.childNodes].filter(node => node.nodeType === 3)[edit.textIndex];
+    }
+    const refresh = () => {
+      for (const edit of edits) {
+        const node = resolve(edit);
+        if (!node) continue;
+        const value = edit.attribute ? node.getAttribute(edit.attribute) : node.nodeValue;
+        // Never overwrite unrelated business data after a rerender or row reorder.
+        if (value !== edit.original || value === edit.value) continue;
+        if (edit.attribute) node.setAttribute(edit.attribute, edit.value);
+        else node.nodeValue = edit.value;
+      }
+    };
+    const observer = new doc.defaultView.MutationObserver(refresh);
+    observer.observe(doc.documentElement, {subtree: true, childList: true, characterData: true,
+      attributes: true, attributeFilter: ['placeholder', 'value']});
+    refresh();
+    return {refresh, resolve, disconnect: () => observer.disconnect()};
+  }
+
+  function selectorFor(doc, element) {
+    const parts = [];
+    for (let node = element; node && node !== doc.body; node = node.parentElement) {
+      for (const attribute of ['id', 'data-id', 'data-page', 'data-modal']) {
+        const value = node.getAttribute(attribute);
+        if (!value) continue;
+        const selector = `[${attribute}="${doc.defaultView.CSS.escape(value)}"]`;
+        if (doc.querySelectorAll(selector).length === 1) return [selector, ...parts].join(' > ');
+      }
+      parts.unshift(`:nth-child(${[...node.parentElement.children].indexOf(node) + 1})`);
+    }
+    return ['body', ...parts].join(' > ');
+  }
+
+  function create({document: doc, edits, onChange}) {
+    const win = doc.defaultView;
+    const guard = installGuard(win);
+    const saved = edits.map(edit => ({...edit}));
+    const applied = apply(doc, saved);
+    let enabled = false, active = null, popup = null, outline = null;
+    function close() {
+      popup?.remove(); popup = null;
+      if (active) {
+        if (outline) active.element.style.setProperty('outline', outline.value, outline.priority);
+        else active.element.style.removeProperty('outline');
+      }
+      active = null;
+    }
+    function choose(event) {
+      let target = event.target;
+      if (!(target instanceof win.Element) || target.closest(excluded)) return null;
+      if (target.closest('svg')) target = target.closest('button,a,label') || target;
+      if (target.matches('input,textarea')) {
+        const attribute = target.matches('input[type=button],input[type=submit],input[type=reset]') ? 'value' : 'placeholder';
+        return {element: target, attribute, original: target.getAttribute(attribute)};
+      }
+      if (target.matches('select')) target = target.options[target.selectedIndex] || target;
+      const range = doc.caretRangeFromPoint?.(event.clientX, event.clientY);
+      let node = range?.startContainer;
+      if (!node || node.nodeType !== 3 || !target.contains(node) || !node.nodeValue.trim()) {
+        const walker = doc.createTreeWalker(target, win.NodeFilter.SHOW_TEXT);
+        node = walker.nextNode();
+        while (node && ((!node.nodeValue.trim() && !saved.some(edit => !edit.attribute && applied.resolve(edit) === node)) || node.parentElement.closest(excluded))) node = walker.nextNode();
+      }
+      if (!node) {
+        const previous = saved.find(edit => edit.selector === selectorFor(doc, target) && !edit.attribute);
+        node = previous && applied.resolve(previous);
+      }
+      if (!node || node.parentElement.closest(excluded)) return null;
+      return {element: node.parentElement, node, textIndex: textNodes(node.parentElement).indexOf(node), original: node.nodeValue};
+    }
+    function click(event) {
+      if (!enabled) return;
+      event.stopImmediatePropagation();
+      if (event.target.closest?.('[data-vprd-text-editor]')) {
+        if (event.target.closest('button')) close();
+        return;
+      }
+      event.preventDefault();
+      close();
+      const target = choose(event);
+      if (!target) return;
+      const selector = selectorFor(doc, target.element);
+      const existing = saved.find(edit => edit.selector === selector && edit.attribute === target.attribute && edit.textIndex === target.textIndex);
+      const edit = existing || {selector, ...(target.attribute ? {attribute: target.attribute} : {textIndex: target.textIndex}), original: target.original, value: target.original};
+      active = target;
+      const old = target.element.style.getPropertyValue('outline');
+      outline = old ? {value: old, priority: target.element.style.getPropertyPriority('outline')} : null;
+      target.element.style.setProperty('outline', '2px solid #2563eb', 'important');
+      popup = doc.createElement('div'); popup.dataset.vprdTextEditor = '';
+      popup.setAttribute('role', 'dialog'); popup.setAttribute('aria-label', '编辑原型文案');
+      popup.style.cssText = 'position:fixed;z-index:2147483647;width:min(320px,calc(100vw - 24px));padding:12px;background:#fff;border:1px solid #cdd8ee;border-radius:9px;box-shadow:0 8px 30px #17203333;color:#172033;font:13px/1.5 sans-serif;box-sizing:border-box';
+      const label = doc.createElement('div'); label.textContent = '编辑原型文案 · 修改自动保存';
+      const input = doc.createElement('textarea'); input.setAttribute('aria-label', '修改原型文案'); input.value = edit.value ?? ''; input.rows = 3;
+      input.style.cssText = 'display:block;width:100%;box-sizing:border-box;margin:8px 0;padding:8px;border:1px solid #cdd8ee;border-radius:5px;font:inherit;color:#172033;background:#fff';
+      const done = doc.createElement('button'); done.type = 'button'; done.textContent = '确定';
+      done.style.cssText = 'display:block;margin-left:auto;padding:5px 14px;border:0;border-radius:5px;color:white;background:#2563eb;cursor:pointer;font:inherit';
+      input.addEventListener('input', event => {
+        event.stopPropagation(); edit.value = input.value;
+        if (target.attribute) target.element.setAttribute(target.attribute, edit.value);
+        else target.node.nodeValue = edit.value;
+        if (!saved.includes(edit)) saved.push(edit);
+        onChange(saved.map(item => ({...item})));
+      });
+      popup.append(label, input, done);
+      popup.style.margin = '0'; popup.style.inset = 'auto';
+      popup.setAttribute('popover', 'manual');
+      (target.element.closest('dialog[open]') || doc.body).append(popup);
+      popup.showPopover?.();
+      const rect = target.element.getBoundingClientRect();
+      popup.style.left = Math.max(12, Math.min(win.innerWidth - popup.offsetWidth - 12, rect.left)) + 'px';
+      popup.style.top = Math.max(12, Math.min(win.innerHeight - popup.offsetHeight - 12, rect.bottom + 8)) + 'px';
+      input.focus(); input.select();
+    }
+    function pointer(event) {
+      if (!enabled) return;
+      event.stopImmediatePropagation();
+      if (!event.target.closest?.('[data-vprd-text-editor]')) {
+        if (event.type === 'pointerdown' && event.target.closest?.(':disabled')) click(event);
+        else event.preventDefault();
+      }
+    }
+    function key(event) {
+      if (!enabled) return;
+      event.stopImmediatePropagation();
+      if (!event.target.closest?.('[data-vprd-text-editor]') && !event.ctrlKey && !event.metaKey && !event.altKey) event.preventDefault();
+      if (event.key === 'Escape') {event.preventDefault(); close();}
+    }
+    guard.click = click; guard.pointerdown = pointer; guard.keydown = key;
+    return {
+      setEnabled(value) {enabled = value; guard.enabled = value; if (!enabled) close();},
+      destroy() {close(); applied.disconnect(); guard.enabled = false; guard.click = guard.pointerdown = guard.keydown = null;}
+    };
+  }
+  global.VisualPRDPrototypeText = {apply, create, installGuard};
+})(window);
+</script>
   <script id="review-state" type="application/json">null</script>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
@@ -4617,6 +4777,7 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
         productHidden: false,
         annotationsHidden: false,
         uiProfile: null,
+        prototypeEdits: [],
         savedAt: ""
       };
 
@@ -4638,6 +4799,8 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
       let positionFrame = 0;
       let toastTimer = 0;
       let uiConfigurator = null;
+      let prototypeTextEditor = null;
+      let prototypeEditing = false;
       let previewRevision = 0;
       let diagramSequence = 0;
       window.mermaid?.initialize({ startOnLoad: false, securityLevel: "strict", theme: "default",
@@ -4823,7 +4986,7 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
         return { docs: state.docs, annotations: state.annotations, activeDoc: state.activeDoc,
           mode: state.mode, leftWidth: state.leftWidth, rightWidth: state.rightWidth,
           productHidden: state.productHidden, annotationsHidden: state.annotationsHidden,
-          uiProfile: uiConfigurator?.getProfile() || state.uiProfile, savedAt: state.savedAt };
+          prototypeEdits: state.prototypeEdits, uiProfile: uiConfigurator?.getProfile() || state.uiProfile, savedAt: state.savedAt };
       }
 
       function reviewHtml(snapshot = reviewSnapshot()) {
@@ -4835,6 +4998,8 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
         root.querySelector("#prototype-frame").removeAttribute("srcdoc");
         root.querySelector("#ui-configurator").hidden = true;
         root.querySelector("#app").inert = false;
+        root.querySelector("#edit-prototype").textContent = "编辑";
+        root.querySelector("#edit-prototype").setAttribute("aria-pressed", "false");
         root.querySelector("#markdown-preview").replaceChildren();
         root.querySelectorAll("[data-mermaid-render-host]").forEach(host => host.remove());
         return "<!doctype html>\n" + root.outerHTML;
@@ -4880,6 +5045,7 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
         if (saved) {
           state.docs = { ...state.docs, ...saved.docs };
           if (Array.isArray(saved.annotations)) state.annotations = saved.annotations;
+          if (Array.isArray(saved.prototypeEdits)) state.prototypeEdits = saved.prototypeEdits;
           if (saved.activeDoc && state.docs[saved.activeDoc]) state.activeDoc = saved.activeDoc;
           if (["review", "floating"].includes(saved.mode)) state.mode = saved.mode;
           if (Number.isFinite(saved.leftWidth)) state.leftWidth = saved.leftWidth;
@@ -5225,6 +5391,10 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
         const doc = frameDocument();
         if (!doc?.body) return;
 
+        prototypeTextEditor?.destroy();
+        prototypeTextEditor = window.VisualPRDPrototypeText?.create({document: doc, edits: state.prototypeEdits,
+          onChange(edits) {state.prototypeEdits = edits; persistState(); requestAnnotationPosition();}});
+        prototypeTextEditor?.setEnabled(prototypeEditing);
         const runtime = prototypeRuntime();
         runtime?.init({
           annotations: state.annotations.map(annotation => ({
@@ -5292,10 +5462,23 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
         sendParentRouteToPrototype();
       }
 
+      function injectPrototypeHead(source, additions) {
+        additions = '<meta charset="utf-8">' + additions;
+        if (/<head(?=[\s>])[^>]*>/i.test(source)) return source.replace(/<head(?=[\s>])[^>]*>/i, match => match + additions);
+        if (/<html(?=[\s>])[^>]*>/i.test(source)) return source.replace(/<html(?=[\s>])[^>]*>/i, match => match + '<head>' + additions + '</head>');
+        return source.replace(/^(\s*<!doctype[^>]*>)?/i, match => match + '<head>' + additions + '</head>');
+      }
+
+      function reviewPrototypeHtml(source) {
+        const bootstrap = window.VisualPRDPrototypeText?.installGuard;
+        if (!bootstrap) return source;
+        return injectPrototypeHead(source, '<script>(' + bootstrap.toString() + ')(window);<' + '/script>');
+      }
+
       function loadPrototype() {
         closeAnnotation();
         const injected = decodeBase64(PROTOTYPE_PAYLOAD);
-        frame.srcdoc = injected || DEFAULT_PROTOTYPE;
+        frame.srcdoc = reviewPrototypeHtml(injected || DEFAULT_PROTOTYPE);
       }
 
       function installResizers() {
@@ -5431,7 +5614,10 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
         const entry = page.nativeRoute
           ? `<script>if (!location.hash) history.replaceState(null, '', ${route});<\/script>`
           : `<script>addEventListener("DOMContentLoaded", () => document.querySelector(${target})?.click(), { once: true });<\/script>`;
-        return source.replace(/<head[^>]*>/i, match => match + entry);
+        const edits = JSON.stringify(state.prototypeEdits).replace(/</g, "\\u003c");
+        const textRuntime = state.prototypeEdits.length
+          ? `<script>(${window.VisualPRDPrototypeText.apply.toString()})(document,${edits});<\/script>` : "";
+        return injectPrototypeHead(source, entry + textRuntime);
       }
 
       function pageFilename(page, index) {
@@ -5534,6 +5720,15 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
 
       function bindReviewEvents() {
         installFlowViewer();
+        $("#edit-prototype").addEventListener("click", () => {
+          if (!prototypeTextEditor) {showToast("请先构建完整评审 HTML 再编辑原型文案"); return;}
+          prototypeEditing = !prototypeEditing;
+          prototypeTextEditor?.setEnabled(prototypeEditing);
+          $("#edit-prototype").textContent = prototypeEditing ? "完成编辑" : "编辑";
+          $("#edit-prototype").setAttribute("aria-pressed", String(prototypeEditing));
+          if (prototypeEditing) showToast("点击中间原型文案即可修改；完成编辑后恢复原型交互");
+          else flushSave();
+        });
         for (const [id, key] of [["product", "productHidden"], ["annotations", "annotationsHidden"]]) {
           $("#toggle-" + id).addEventListener("click", () => {
             if (state.mode === "floating") setMode("review");
@@ -5733,7 +5928,7 @@ globalThis["mermaid"] = globalThis.__esbuild_esm_mermaid_nm["mermaid"].default;
           syncPrototypeContext();
           persistState();
         },
-        loadPrototype(html) { frame.srcdoc = String(html); }
+        loadPrototype(html) { frame.srcdoc = reviewPrototypeHtml(String(html)); }
       };
 
       init();

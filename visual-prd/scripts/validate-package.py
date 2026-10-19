@@ -55,6 +55,8 @@ REQUIRED_FILES = (
     "scripts/check-flow-build.py",
     "scripts/check-draft-compatibility.js",
     "scripts/check-save-behavior.js",
+    "scripts/prototype-text-runtime.js",
+    "scripts/check-prototype-text.js",
     "scripts/validate-review-artifact.py",
     "scripts/prepare-prototype.py",
     "scripts/project_manifest.py",
@@ -101,7 +103,7 @@ def validate_frontmatter() -> None:
     require(author == expected_author, "metadata.author does not match the declared original author")
     require(fields.get("display_name_zh", "").strip('"\'') == "可视化产品需求设计", "Chinese display name is missing")
     require(fields.get("icon", "").strip('"\'') == "assets/skill-icon.png", "metadata.icon is invalid")
-    require(version == "4.1.7", "visual-prd version is not 4.1.7")
+    require(version == "4.1.8", "visual-prd version is not 4.1.8")
     for target in re.findall(r"\]\(([^)]+)\)", source):
         if "://" not in target and not target.startswith("#"):
             require((SKILL_ROOT / target).exists(), f"Broken local reference: {target}")
@@ -570,6 +572,8 @@ def main() -> None:
     require(drafts.returncode == 0, drafts.stdout + drafts.stderr)
     saves = subprocess.run(["node", str(SKILL_ROOT / "scripts/check-save-behavior.js")], capture_output=True, text=True, check=False)
     require(saves.returncode == 0, saves.stdout + saves.stderr)
+    copy_edits = subprocess.run(["node", str(SKILL_ROOT / "scripts/check-prototype-text.js")], capture_output=True, text=True, check=False)
+    require(copy_edits.returncode == 0, copy_edits.stdout + copy_edits.stderr)
     print(f"PASS: {SKILL_ROOT.name} is complete, self-contained, syntactically valid, and smoke-tested")
 
 

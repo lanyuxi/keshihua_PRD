@@ -469,6 +469,7 @@
               <button id="previous-page" class="button button-quiet" type="button" aria-label="上一页">‹</button>
               <select id="page-select" class="button button-quiet" aria-label="当前页面"></select>
               <button id="next-page" class="button button-quiet" type="button" aria-label="下一页">›</button>
+              <button id="edit-prototype" class="button button-quiet" type="button" aria-pressed="false">编辑</button>
               <button id="download-page" class="button button-quiet" type="button">下载</button>
             <button id="refresh-frame" class="button button-quiet" type="button" title="重新载入原型">重新载入</button></div>
           </header>
@@ -576,6 +577,7 @@
     </header>
     <div id="flow-viewport"><img id="flow-viewer-image" alt="流程图全屏预览"></div>
   </dialog>
+  <script>/*__PROTOTYPE_TEXT_RUNTIME__*/</script>
   <script id="review-state" type="application/json">null</script>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
@@ -700,6 +702,7 @@
         productHidden: false,
         annotationsHidden: false,
         uiProfile: null,
+        prototypeEdits: [],
         savedAt: ""
       };
 
@@ -721,6 +724,8 @@
       let positionFrame = 0;
       let toastTimer = 0;
       let uiConfigurator = null;
+      let prototypeTextEditor = null;
+      let prototypeEditing = false;
       let previewRevision = 0;
       let diagramSequence = 0;
       window.mermaid?.initialize({ startOnLoad: false, securityLevel: "strict", theme: "default",
@@ -906,7 +911,7 @@
         return { docs: state.docs, annotations: state.annotations, activeDoc: state.activeDoc,
           mode: state.mode, leftWidth: state.leftWidth, rightWidth: state.rightWidth,
           productHidden: state.productHidden, annotationsHidden: state.annotationsHidden,
-          uiProfile: uiConfigurator?.getProfile() || state.uiProfile, savedAt: state.savedAt };
+          prototypeEdits: state.prototypeEdits, uiProfile: uiConfigurator?.getProfile() || state.uiProfile, savedAt: state.savedAt };
       }
 
       function reviewHtml(snapshot = reviewSnapshot()) {
@@ -918,6 +923,8 @@
         root.querySelector("#prototype-frame").removeAttribute("srcdoc");
         root.querySelector("#ui-configurator").hidden = true;
         root.querySelector("#app").inert = false;
+        root.querySelector("#edit-prototype").textContent = "编辑";
+        root.querySelector("#edit-prototype").setAttribute("aria-pressed", "false");
         root.querySelector("#markdown-preview").replaceChildren();
         root.querySelectorAll("[data-mermaid-render-host]").forEach(host => host.remove());
         return "<!doctype html>\n" + root.outerHTML;
@@ -963,6 +970,7 @@
         if (saved) {
           state.docs = { ...state.docs, ...saved.docs };
           if (Array.isArray(saved.annotations)) state.annotations = saved.annotations;
+          if (Array.isArray(saved.prototypeEdits)) state.prototypeEdits = saved.prototypeEdits;
           if (saved.activeDoc && state.docs[saved.activeDoc]) state.activeDoc = saved.activeDoc;
           if (["review", "floating"].includes(saved.mode)) state.mode = saved.mode;
           if (Number.isFinite(saved.leftWidth)) state.leftWidth = saved.leftWidth;
@@ -1308,6 +1316,10 @@
         const doc = frameDocument();
         if (!doc?.body) return;
 
+        prototypeTextEditor?.destroy();
+        prototypeTextEditor = window.VisualPRDPrototypeText?.create({document: doc, edits: state.prototypeEdits,
+          onChange(edits) {state.prototypeEdits = edits; persistState(); requestAnnotationPosition();}});
+        prototypeTextEditor?.setEnabled(prototypeEditing);
         const runtime = prototypeRuntime();
         runtime?.init({
           annotations: state.annotations.map(annotation => ({
@@ -1375,10 +1387,23 @@
         sendParentRouteToPrototype();
       }
 
+      function injectPrototypeHead(source, additions) {
+        additions = '<meta charset="utf-8">' + additions;
+        if (/<head(?=[\s>])[^>]*>/i.test(source)) return source.replace(/<head(?=[\s>])[^>]*>/i, match => match + additions);
+        if (/<html(?=[\s>])[^>]*>/i.test(source)) return source.replace(/<html(?=[\s>])[^>]*>/i, match => match + '<head>' + additions + '</head>');
+        return source.replace(/^(\s*<!doctype[^>]*>)?/i, match => match + '<head>' + additions + '</head>');
+      }
+
+      function reviewPrototypeHtml(source) {
+        const bootstrap = window.VisualPRDPrototypeText?.installGuard;
+        if (!bootstrap) return source;
+        return injectPrototypeHead(source, '<script>(' + bootstrap.toString() + ')(window);<' + '/script>');
+      }
+
       function loadPrototype() {
         closeAnnotation();
         const injected = decodeBase64(PROTOTYPE_PAYLOAD);
-        frame.srcdoc = injected || DEFAULT_PROTOTYPE;
+        frame.srcdoc = reviewPrototypeHtml(injected || DEFAULT_PROTOTYPE);
       }
 
       function installResizers() {
@@ -1514,7 +1539,10 @@
         const entry = page.nativeRoute
           ? `<script>if (!location.hash) history.replaceState(null, '', ${route});<\/script>`
           : `<script>addEventListener("DOMContentLoaded", () => document.querySelector(${target})?.click(), { once: true });<\/script>`;
-        return source.replace(/<head[^>]*>/i, match => match + entry);
+        const edits = JSON.stringify(state.prototypeEdits).replace(/</g, "\\u003c");
+        const textRuntime = state.prototypeEdits.length
+          ? `<script>(${window.VisualPRDPrototypeText.apply.toString()})(document,${edits});<\/script>` : "";
+        return injectPrototypeHead(source, entry + textRuntime);
       }
 
       function pageFilename(page, index) {
@@ -1617,6 +1645,15 @@
 
       function bindReviewEvents() {
         installFlowViewer();
+        $("#edit-prototype").addEventListener("click", () => {
+          if (!prototypeTextEditor) {showToast("请先构建完整评审 HTML 再编辑原型文案"); return;}
+          prototypeEditing = !prototypeEditing;
+          prototypeTextEditor?.setEnabled(prototypeEditing);
+          $("#edit-prototype").textContent = prototypeEditing ? "完成编辑" : "编辑";
+          $("#edit-prototype").setAttribute("aria-pressed", String(prototypeEditing));
+          if (prototypeEditing) showToast("点击中间原型文案即可修改；完成编辑后恢复原型交互");
+          else flushSave();
+        });
         for (const [id, key] of [["product", "productHidden"], ["annotations", "annotationsHidden"]]) {
           $("#toggle-" + id).addEventListener("click", () => {
             if (state.mode === "floating") setMode("review");
@@ -1816,7 +1853,7 @@
           syncPrototypeContext();
           persistState();
         },
-        loadPrototype(html) { frame.srcdoc = String(html); }
+        loadPrototype(html) { frame.srcdoc = reviewPrototypeHtml(String(html)); }
       };
 
       init();
