@@ -245,6 +245,23 @@ def developer_source(source: str) -> str:
         ) else match.group(0),
         source, flags=re.IGNORECASE | re.DOTALL,
     )
+    def strip_generated_metadata(match):
+        script = match.group(0)
+        def clean(value):
+            if isinstance(value, list):
+                return [clean(item) for item in value]
+            if isinstance(value, dict):
+                return {key: clean(item) for key, item in value.items()
+                        if not (key == "annotation" and isinstance(item, dict) and "id" in item and "order" in item)}
+            return value
+        for name in ("initialState", "listSchemas"):
+            declaration = re.search(r"\bconst " + name + r"\s*=\s*", script)
+            if declaration:
+                start = declaration.end()
+                value, length = json.JSONDecoder().raw_decode(script[start:])
+                script = script[:start] + json.dumps(clean(value), ensure_ascii=False) + script[start + length:]
+        return re.sub(r"<!--vprd:annotation-fields-->.*?<!--/vprd:annotation-fields-->", "", script, flags=re.DOTALL)
+    source = re.sub(r'<script\b[^>]*\bdata-vprd-generated[^>]*>.*?</script>', strip_generated_metadata, source, flags=re.DOTALL)
     source = re.sub(r'\s+data-anno(?:-[\w-]+)?\s*=\s*["\'][^"\']*["\']', "", source)
     runtime = (SKILL_ROOT / "scripts/prototype-runtime.js").read_text(encoding="utf-8")
     return re.sub(
@@ -336,8 +353,8 @@ def build(
     )
     page = page.replace("__VISUAL_PRD_DEVELOPER_BASE64__", encode_payload(developer_source(prototype_source)), 1)
     page = page.replace("__VISUAL_PRD_FLOWS_BASE64__", encode_payload(flows_markdown), 1)
-    logo = base64.b64encode((SKILL_ROOT / "assets/brand-logo.png").read_bytes()).decode("ascii")
-    page = page.replace('src="brand-logo.png"', f'src="data:image/png;base64,{logo}"', 1)
+    logo = base64.b64encode((SKILL_ROOT / "assets/brand-logo.webp").read_bytes()).decode("ascii")
+    page = page.replace('src="brand-logo.webp"', f'src="data:image/webp;base64,{logo}"', 1)
     unresolved = [
         marker for marker in (
             'const PROTOTYPE_PAYLOAD = "__VISUAL_PRD_PROTOTYPE_BASE64__"',

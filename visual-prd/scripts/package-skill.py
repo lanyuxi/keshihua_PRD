@@ -96,6 +96,8 @@ def build_archive(output: Path) -> tuple[int, str]:
             info.compress_type = zipfile.ZIP_DEFLATED
             info.external_attr = (0o755 if source.suffix in {".py", ".js"} else 0o644) << 16
             archive.writestr(info, source.read_bytes())
+    if output.stat().st_size >= 3_000_000:
+        raise ValueError("Skill ZIP exceeds the 3,000,000 byte distribution limit; do not remove content or reduce quality")
     digest = hashlib.sha256(output.read_bytes()).hexdigest()
     return len(files), digest
 

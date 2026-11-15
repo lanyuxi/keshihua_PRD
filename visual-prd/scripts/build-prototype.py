@@ -89,15 +89,17 @@ def render_component(component: dict, page_id: str, profile: dict) -> str:
         if controls.get("search", True):
             control_html += f'<input class="search" type="search" placeholder="搜索" data-search="{esc(list_id)}" data-list-target="{esc(list_id)}">'
         for filter_spec in controls.get("filters", []):
+            filter_html = ""
             filter_key = esc(filter_spec.get("key", "status"))
             options = "".join(f'<option value="{esc(option.get("value", ""))}">{esc(option.get("label", option.get("value", "")))}</option>' for option in filter_spec.get("options", []))
-            control_html += f'<select data-ui-filter-variant="select" data-filter="{filter_key}" data-list-target="{esc(list_id)}"{"" if filter_variant == "select" else " hidden"}><option value="all">全部</option>{options}</select>'
+            filter_html += f'<select data-ui-filter-variant="select" data-filter="{filter_key}" data-list-target="{esc(list_id)}"{"" if filter_variant == "select" else " hidden"}><option value="all">全部</option>{options}</select>'
             for candidate in ("segmented", "chips"):
                 buttons = [f'<button type="button" class="active" data-filter="{filter_key}=all" data-list-target="{esc(list_id)}" aria-pressed="true">全部</button>']
                 buttons.extend(f'<button type="button" data-filter="{filter_key}={esc(option.get("value", ""))}" data-list-target="{esc(list_id)}" aria-pressed="false">{esc(option.get("label", option.get("value", "")))}</button>' for option in filter_spec.get("options", []))
-                control_html += f'<div class="filter-group filter-{candidate}" data-ui-filter-variant="{candidate}"{"" if filter_variant == candidate else " hidden"}>{"".join(buttons)}</div>'
+                filter_html += f'<div class="filter-group filter-{candidate}" data-ui-filter-variant="{candidate}"{"" if filter_variant == candidate else " hidden"}>{"".join(buttons)}</div>'
+            control_html += f'<div class="filter-control"{annotation_attr(filter_spec)}>{filter_html}</div>'
         columns = component.get("columns", [])
-        header = "".join(f'<th><span role="button" tabindex="0" data-sort="{esc(column.get("key", ""))}" data-list-target="{esc(list_id)}">{esc(column.get("label", column.get("key", "")))}</span></th>' for column in columns)
+        header = "".join(f'<th{annotation_attr(column)}><span role="button" tabindex="0" data-sort="{esc(column.get("key", ""))}" data-list-target="{esc(list_id)}">{esc(column.get("label", column.get("key", "")))}</span></th>' for column in columns)
         rows = []
         card_rows = []
         for row in component.get("rows", []):
@@ -115,6 +117,9 @@ def render_component(component: dict, page_id: str, profile: dict) -> str:
             rows.append(f'<tr data-list-item data-search-text="{esc(" ".join(str(value) for value in row.values() if not isinstance(value, (dict, list))))}" {attrs}{annotation_attr(row)}>{cells}</tr>')
             card_fields = "".join(f'<div><span>{esc(column.get("label", column.get("key", "")))}</span><strong>{esc(row.get(column.get("key"), ""))}</strong></div>' for column in columns)
             card_rows.append(f'<article class="list-card" data-list-item data-search-text="{esc(" ".join(str(value) for value in row.values() if not isinstance(value, (dict, list))))}" {attrs}{annotation_attr(row)}>{card_fields}{card_action}</article>')
+        if any(column.get("annotation") for column in columns):
+            labels = "".join(f'<span{annotation_attr(column)}>{esc(column.get("label", column.get("key", "")))}</span>' for column in columns if column.get("annotation"))
+            if labels: card_rows.insert(0, f'<!--vprd:annotation-fields--><div class="list-field-legend" style="grid-column:1/-1;display:flex;gap:18px">{labels}</div><!--/vprd:annotation-fields-->')
         action_header = "<th>操作</th>" if component.get("row_action") else ""
         if list_variant == "cards":
             list_markup = f'<div class="list-cards density-{esc(density)}" data-list="{esc(list_id)}" data-ui-list-view="cards">{"".join(card_rows)}</div><div class="empty-state" data-empty-for="{esc(list_id)}" hidden>暂无符合条件的数据</div>'
@@ -260,7 +265,7 @@ def compile_prototype(model: dict, profile: dict | None = None) -> str:
 <body data-anno-page="{esc(first_page)}">
   <div class="shell"><nav class="nav"{nav_annotation}><h1 class="brand">{esc(model['product']['name'])}</h1>{nav}</nav><div class="content" id="app"></div></div>
   <div id="modal-root"></div><div id="toast-root" role="status"></div>
-  <script>
+  <script data-vprd-generated>
     const initialState = {json.dumps(initial, ensure_ascii=False, indent=2)};
     const pages = {{{', '.join(page_entries)}}};
     const modals = {{{', '.join(modal_entries)}}};
@@ -319,7 +324,7 @@ def compile_prototype(model: dict, profile: dict | None = None) -> str:
       }} else {{
         replacement = document.createElement('div'); replacement.className = `table-wrap density-${{densityClass}}`;
         const table = document.createElement('table'); const thead = document.createElement('thead'); const headRow = document.createElement('tr');
-        schema.columns.forEach(column => {{ const th = document.createElement('th'); const sort = document.createElement('span'); sort.role = 'button'; sort.tabIndex = 0; sort.dataset.sort = column.key; sort.dataset.listTarget = listId; sort.textContent = column.label || column.key; th.appendChild(sort); headRow.appendChild(th); }});
+        schema.columns.forEach(column => {{ const th = document.createElement('th'); if (column.annotation?.id) th.dataset.anno = column.annotation.id; const sort = document.createElement('span'); sort.role = 'button'; sort.tabIndex = 0; sort.dataset.sort = column.key; sort.dataset.listTarget = listId; sort.textContent = column.label || column.key; th.appendChild(sort); headRow.appendChild(th); }});
         if (schema.rowAction) {{ const th = document.createElement('th'); th.textContent = '操作'; headRow.appendChild(th); }}
         const body = document.createElement('tbody'); body.dataset.list = listId; thead.appendChild(headRow); table.append(thead, body); replacement.appendChild(table);
       }}
@@ -408,6 +413,11 @@ def compile_prototype(model: dict, profile: dict | None = None) -> str:
         if (action) {{ if (schema.variant === 'cards') item.appendChild(action); else {{ const cell = document.createElement('td'); cell.appendChild(action); item.appendChild(cell); }} }}
         return item;
       }});
+      if (schema.variant === 'cards' && schema.columns.some(column => column.annotation?.id)) {{
+        const labels = document.createElement('div'); labels.className = 'list-field-legend'; labels.style.cssText = 'grid-column:1/-1;display:flex;gap:18px';
+        schema.columns.filter(column => column.annotation?.id).forEach(column => {{ const label = document.createElement('span'); label.dataset.anno = column.annotation.id; label.textContent = column.label || column.key; labels.appendChild(label); }});
+        nodes.unshift(labels);
+      }}
       list.replaceChildren(...nodes);
     }}
     const listRenderers = Object.fromEntries(Object.keys(listSchemas).map(listId => [listId, (list, items) => renderGeneratedList(list, items)]));

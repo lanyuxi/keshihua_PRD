@@ -4,16 +4,28 @@
     "name": "示例任务看板",
     "summary": "帮助团队创建、查看并跟踪任务。",
     "goal": "让任务状态与责任人保持透明。",
-    "platforms": ["桌面端 Web", "移动端 Web"],
-    "scope": ["任务列表", "任务详情", "创建任务"],
-    "exclusions": ["复杂审批流程"]
+    "platforms": [
+      "桌面端 Web",
+      "移动端 Web"
+    ],
+    "scope": [
+      "任务列表",
+      "任务详情",
+      "创建任务"
+    ],
+    "exclusions": [
+      "复杂审批流程"
+    ]
   },
   "roles": [
     {
       "id": "owner",
       "name": "团队负责人",
       "description": "维护团队任务。",
-      "permissions": ["创建任务", "查看任务详情"]
+      "permissions": [
+        "创建任务",
+        "查看任务详情"
+      ]
     }
   ],
   "modules": [
@@ -22,7 +34,9 @@
       "title": "任务看板",
       "priority": "P0",
       "description": "集中展示与维护任务。",
-      "requirement_ids": ["REQ-001"],
+      "requirement_ids": [
+        "REQ-001"
+      ],
       "dependencies": []
     }
   ],
@@ -53,10 +67,18 @@
           "text": "我希望维护任务，以便团队明确下一步工作。"
         }
       ],
-      "rule_ids": ["RULE-001"],
-      "acceptance_ids": ["AC-001"],
+      "rule_ids": [
+        "RULE-001"
+      ],
+      "acceptance_ids": [
+        "AC-001"
+      ],
       "state_machine": {
-        "states": ["待处理", "进行中", "已完成"],
+        "states": [
+          "待处理",
+          "进行中",
+          "已完成"
+        ],
         "transitions": [
           {
             "from": "待处理",
@@ -74,18 +96,25 @@
       {
         "id": "list",
         "title": "任务列表",
-        "requirement_ids": ["REQ-001"],
+        "requirement_ids": [
+          "REQ-001"
+        ],
         "components": [
           {
             "id": "list-hero",
             "type": "hero",
             "title": "任务看板",
             "description": "查看团队任务并快速创建新任务。",
-            "requirement_ids": ["REQ-001"],
+            "requirement_ids": [
+              "REQ-001"
+            ],
             "annotation": {
               "id": "task-overview",
               "order": 1,
-              "scope": { "type": "page", "id": "list" },
+              "scope": {
+                "type": "page",
+                "id": "list"
+              },
               "title": "任务概览",
               "rule_refs": [],
               "acceptance_refs": []
@@ -98,10 +127,17 @@
                 "annotation": {
                   "id": "create-entry",
                   "order": 2,
-                  "scope": { "type": "page", "id": "list" },
+                  "scope": {
+                    "type": "page",
+                    "id": "list"
+                  },
                   "title": "创建入口",
-                  "rule_refs": ["RULE-001"],
-                  "acceptance_refs": ["AC-001"]
+                  "rule_refs": [
+                    "RULE-001"
+                  ],
+                  "acceptance_refs": [
+                    "AC-001"
+                  ]
                 }
               }
             ]
@@ -118,38 +154,99 @@
                 {
                   "key": "status",
                   "options": [
-                    { "label": "待处理", "value": "待处理" },
-                    { "label": "进行中", "value": "进行中" }
-                  ]
+                    {
+                      "label": "待处理",
+                      "value": "待处理"
+                    },
+                    {
+                      "label": "进行中",
+                      "value": "进行中"
+                    }
+                  ],
+                  "annotation": {
+                    "id": "filter-status",
+                    "order": 6,
+                    "title": "状态筛选器",
+                    "summary": "按状态筛选，可恢复全部状态"
+                  }
                 }
               ]
             },
             "columns": [
-              { "key": "title", "label": "任务" },
-              { "key": "owner", "label": "负责人" },
-              { "key": "status", "label": "状态" }
+              {
+                "key": "title",
+                "label": "任务",
+                "annotation": {
+                  "id": "field-title",
+                  "order": 3,
+                  "title": "任务字段",
+                  "summary": "展示该字段；权限与格式规则待确认"
+                }
+              },
+              {
+                "key": "owner",
+                "label": "负责人",
+                "annotation": {
+                  "id": "field-owner",
+                  "order": 4,
+                  "title": "负责人字段",
+                  "summary": "展示该字段；权限与格式规则待确认"
+                }
+              },
+              {
+                "key": "status",
+                "label": "状态",
+                "annotation": {
+                  "id": "field-status",
+                  "order": 5,
+                  "title": "状态字段",
+                  "summary": "展示该字段；权限与格式规则待确认"
+                }
+              }
             ],
             "rows": [
-              { "id": "task-1", "title": "完成方案评审", "owner": "负责人", "status": "进行中" },
-              { "id": "task-2", "title": "整理用户反馈", "owner": "成员甲", "status": "待处理" }
+              {
+                "id": "task-1",
+                "title": "完成方案评审",
+                "owner": "负责人",
+                "status": "进行中"
+              },
+              {
+                "id": "task-2",
+                "title": "整理用户反馈",
+                "owner": "成员甲",
+                "status": "待处理"
+              }
             ],
             "row_action": "navigate:detail",
-            "row_params": { "taskId": "{id}" }
+            "row_params": {
+              "taskId": "{id}"
+            }
           }
         ]
       },
       {
         "id": "detail",
         "title": "任务详情",
-        "requirement_ids": ["REQ-001"],
+        "requirement_ids": [
+          "REQ-001"
+        ],
         "components": [
           {
             "id": "detail-tabs",
             "type": "tabs",
             "title": "详情标签",
             "tabs": [
-              { "id": "overview", "label": "概览", "content": "任务背景与当前状态。" },
-              { "id": "history", "label": "历史", "content": "任务的变更记录。" }
+              {
+                "id": "overview",
+                "label": "概览",
+                "content": "任务背景与当前状态。"
+              },
+              {
+                "id": "history",
+                "label": "历史",
+                "content": "任务的变更记录。"
+              }
             ]
           }
         ]
@@ -162,7 +259,25 @@
         "title": "新建任务",
         "type": "dialog",
         "fields": [
-          { "name": "title", "label": "任务名称", "type": "text", "required": true }
+          {
+            "name": "title",
+            "label": "任务名称",
+            "type": "text",
+            "required": true,
+            "annotation": {
+              "id": "create-title-field",
+              "order": 2,
+              "title": "任务名称",
+              "scope": {
+                "type": "modal",
+                "id": "create"
+              },
+              "rule_refs": [
+                "RULE-001"
+              ],
+              "acceptance_refs": []
+            }
+          }
         ],
         "submit": {
           "label": "创建",
@@ -179,10 +294,17 @@
         "annotation": {
           "id": "create-form",
           "order": 1,
-          "scope": { "type": "modal", "id": "create" },
+          "scope": {
+            "type": "modal",
+            "id": "create"
+          },
           "title": "创建任务表单",
-          "rule_refs": ["RULE-001"],
-          "acceptance_refs": ["AC-001"]
+          "rule_refs": [
+            "RULE-001"
+          ],
+          "acceptance_refs": [
+            "AC-001"
+          ]
         }
       }
     ]

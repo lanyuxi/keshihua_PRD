@@ -95,6 +95,10 @@ def iter_annotated_nodes(model: dict[str, Any]):
         yield page, page.get("annotation"), page.get("id"), f'prototype.pages[{page.get("id", "?")}]'
         for component_index, component in enumerate(page.get("components") or []):
             yield component, component.get("annotation"), page.get("id"), f'page {page.get("id")}.components[{component_index}]'
+            for column_index, column in enumerate(component.get("columns") or []):
+                yield column, column.get("annotation"), page.get("id"), f'page {page.get("id")}.columns[{column_index}]'
+            for filter_index, filter_spec in enumerate((component.get("controls") or {}).get("filters") or []):
+                yield filter_spec, filter_spec.get("annotation"), page.get("id"), f'page {page.get("id")}.filters[{filter_index}]'
             for action_index, action in enumerate(component.get("actions") or []):
                 yield action, action.get("annotation"), page.get("id"), f'page {page.get("id")}.actions[{action_index}]'
             for row_index, row in enumerate(component.get("rows") or []):

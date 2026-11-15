@@ -26,11 +26,73 @@
     }
   },
   {
+    "id": "field-title",
+    "order": 3,
+    "pageId": "list",
+    "title": "任务字段",
+    "body": "展示该字段；权限与格式规则待确认",
+    "businessRules": [],
+    "scope": {
+      "type": "page",
+      "id": "list"
+    }
+  },
+  {
+    "id": "field-owner",
+    "order": 4,
+    "pageId": "list",
+    "title": "负责人字段",
+    "body": "展示该字段；权限与格式规则待确认",
+    "businessRules": [],
+    "scope": {
+      "type": "page",
+      "id": "list"
+    }
+  },
+  {
+    "id": "field-status",
+    "order": 5,
+    "pageId": "list",
+    "title": "状态字段",
+    "body": "展示该字段；权限与格式规则待确认",
+    "businessRules": [],
+    "scope": {
+      "type": "page",
+      "id": "list"
+    }
+  },
+  {
+    "id": "filter-status",
+    "order": 6,
+    "pageId": "list",
+    "title": "状态筛选器",
+    "body": "按状态筛选，可恢复全部状态",
+    "businessRules": [],
+    "scope": {
+      "type": "page",
+      "id": "list"
+    }
+  },
+  {
     "id": "create-form",
     "order": 1,
     "pageId": "list",
     "title": "创建任务表单",
     "body": "待确认\n验收：负责人填写任务名称后可成功提交。",
+    "businessRules": [
+      "任务名称不能为空。"
+    ],
+    "scope": {
+      "type": "modal",
+      "id": "create"
+    }
+  },
+  {
+    "id": "create-title-field",
+    "order": 2,
+    "pageId": "list",
+    "title": "任务名称",
+    "body": "待确认",
     "businessRules": [
       "任务名称不能为空。"
     ],

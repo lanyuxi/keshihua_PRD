@@ -39,8 +39,8 @@ REQUIRED_FILES = (
     "assets/product-model-template.json",
     "assets/ui-profile-template.json",
     "assets/project-manifest-template.json",
-    "assets/skill-icon.png",
-    "assets/brand-logo.png",
+    "assets/skill-icon.webp",
+    "assets/brand-logo.webp",
     "assets/mermaid.min.js",
     "assets/mermaid-LICENSE.txt",
     "references/editing-and-export.md",
@@ -101,18 +101,20 @@ def validate_frontmatter() -> None:
     author = fields.get("author", "").strip("\"'")
     expected_author = "公众号“" + "A" + "I 翻车现场”的智障研究员"
     require(author == expected_author, "metadata.author does not match the declared original author")
-    require(fields.get("display_name_zh", "").strip('"\'') == "可视化产品需求设计", "Chinese display name is missing")
-    require(fields.get("icon", "").strip('"\'') == "assets/skill-icon.png", "metadata.icon is invalid")
-    require(version == "4.1.11", "visual-prd version is not 4.1.11")
+    require(fields.get("display_name_zh", "").strip('"\'') == "可视化 PRD", "Chinese display name is missing")
+    require(fields.get("icon", "").strip('"\'') == "assets/skill-icon.webp", "metadata.icon is invalid")
+    require(version == "4.2.0", "visual-prd version is not 4.2.0")
     for target in re.findall(r"\]\(([^)]+)\)", source):
         if "://" not in target and not target.startswith("#"):
             require((SKILL_ROOT / target).exists(), f"Broken local reference: {target}")
 
 
 def validate_icon() -> None:
-    data = (SKILL_ROOT / "assets/skill-icon.png").read_bytes()
-    require(data[:8] == b"\x89PNG\r\n\x1a\n" and data[12:16] == b"IHDR", "skill icon is not PNG")
-    require(struct.unpack(">II", data[16:24]) == (1024, 1024), "skill icon must be 1024x1024")
+    data = (SKILL_ROOT / "assets/skill-icon.webp").read_bytes()
+    require(data[:4] == b"RIFF" and data[8:12] == b"WEBP" and data[12:16] == b"VP8L", "skill icon must be lossless WebP")
+    dimensions = int.from_bytes(data[21:25], "little")
+    require((dimensions & 0x3fff) + 1 == 1024 and ((dimensions >> 14) & 0x3fff) + 1 == 1024, "skill icon must retain 1024x1024 pixels")
+
 
 
 def validate_templates() -> None:
