@@ -373,7 +373,14 @@
     #annotation-editor-dialog h2 { margin: 0 0 12px; font-size: 18px; }
     #annotation-editor-dialog label { display: block; margin: 12px 0; font-size: 12px; }
     #annotation-editor-dialog input, #annotation-editor-dialog textarea { display: block; width: 100%; margin-top: 6px; padding: 10px; border: 1px solid var(--line); border-radius: 7px; font: 13px/1.6 monospace; }
-    .annotation-editor-actions { display: flex; justify-content: flex-end; margin-top: 16px; }
+    .annotation-editor-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+    .annotation-dialog-heading { display: flex; justify-content: space-between; align-items: start; gap: 16px; }
+    .annotation-dialog-x { border: 0; background: transparent; color: var(--muted); font-size: 24px; line-height: 1; cursor: pointer; }
+    .annotation-actions { display: inline-flex; gap: 6px; flex-shrink: 0; }
+    .annotation-delete { border: 0; padding: 2px 4px; background: transparent; color: #b42318; font-size: 11px; cursor: pointer; }
+    #annotation-delete-dialog { width: min(420px, calc(100vw - 32px)); border: 1px solid var(--line); border-radius: 12px; padding: 20px; }
+    #annotation-delete-dialog::backdrop { background: rgba(23,32,51,.4); }
+    #annotation-delete-confirm { color: #fff; background: #b42318; border-color: #b42318; }
     #annotation-editor-close { background: #2563eb; border-color: #2563eb; color: #fff; }
     .product-hidden .workspace { grid-template-columns: 0 0 minmax(0, 1fr) 7px var(--right-width); }
     .annotations-hidden .workspace { grid-template-columns: var(--left-width) 7px minmax(0, 1fr) 0 0; }
@@ -555,13 +562,19 @@
 
   <script>/*__UI_CONFIGURATOR_RUNTIME__*/</script>
   <dialog id="annotation-editor-dialog" aria-labelledby="annotation-editor-heading">
-    <h2 id="annotation-editor-heading">编辑标注</h2>
+    <div class="annotation-dialog-heading"><h2 id="annotation-editor-heading">编辑标注</h2><button id="annotation-editor-dismiss" class="annotation-dialog-x" type="button" aria-label="关闭标注编辑弹窗">×</button></div>
     <label>标题<input id="annotation-title" type="text"></label>
-    <label>内容（Markdown，可直接粘贴图片）<textarea id="annotation-body" rows="8"></textarea></label>
+    <label>内容（可直接粘贴图片，支持轻量排版）<textarea id="annotation-body" rows="8"></textarea></label>
     <label>业务规则（每行一条）<textarea id="annotation-rules" rows="3"></textarea></label>
     <p class="doc-context">修改立即保存。首次点击“授权自动写回”选择正在编辑的已有 HTML；显示“已自动写回”后可关闭。</p>
     <div id="annotation-editor-preview" class="markdown-preview"></div>
-    <div class="annotation-editor-actions"><button id="annotation-editor-close" class="button" type="button">确定</button></div>
+    <div class="annotation-editor-actions"><button id="annotation-editor-cancel" class="button" type="button">取消</button><button id="annotation-editor-close" class="button" type="button">确定</button></div>
+  </dialog>
+  <dialog id="annotation-delete-dialog" aria-labelledby="annotation-delete-heading">
+    <div class="annotation-dialog-heading"><h2 id="annotation-delete-heading">删除标注</h2><button class="annotation-dialog-x" type="button" data-cancel-delete aria-label="关闭删除确认弹窗">×</button></div>
+    <p id="annotation-delete-message"></p>
+    <p class="doc-context">确定后删除该说明和对应数字圆点，并自动保存。其他标注编号保持不变。</p>
+    <div class="annotation-editor-actions"><button class="button" type="button" data-cancel-delete>取消</button><button id="annotation-delete-confirm" class="button" type="button">确定删除</button></div>
   </dialog>
   <dialog id="flow-viewer" aria-labelledby="flow-viewer-title">
     <header class="flow-viewer-toolbar">
@@ -683,7 +696,7 @@
         { id: "data", label: "数据与发布", context: "字段、指标、埋点与发布安排" }
       ];
 
-      const SCOPE_LABEL = { page: "页面", tab: "Tab", drawer: "抽屉", modal: "弹层" };
+      const SCOPE_LABEL = { page: "页面", tab: "标签页", drawer: "抽屉", modal: "弹层" };
       const state = {
         mode: "review",
         activeDoc: "architecture",
@@ -713,6 +726,7 @@
       const editor = $("#markdown-editor");
       const preview = $("#markdown-preview");
       let editingAnnotationId = "";
+      let deletingAnnotationId = "";
       let fileHandle = null;
       let revision = 0;
       let diskRevision = 0;
@@ -927,6 +941,7 @@
         const root = document.documentElement.cloneNode(true);
         root.querySelector("#review-state").textContent = JSON.stringify(snapshot).replace(/</g, "\\u003c");
         root.querySelector("#annotation-editor-dialog").removeAttribute("open");
+        root.querySelector("#annotation-delete-dialog").removeAttribute("open");
         root.querySelector("#flow-viewer").removeAttribute("open");
         root.querySelector("#flow-viewer-image").removeAttribute("src");
         root.querySelector("#flow-viewer-image").removeAttribute("style");
@@ -1115,9 +1130,10 @@
         const runtime = prototypeRuntime();
         if (runtime) {
           const visibleIds = new Set(runtime.getState().visibleIds || []);
-          return state.annotations.filter(annotation => annotation.position ? manualAnnotationVisible(annotation) : visibleIds.has(annotation.id));
+          return state.annotations.filter(annotation => !annotation.deleted && (annotation.position ? manualAnnotationVisible(annotation) : visibleIds.has(annotation.id)));
         }
         return state.annotations.filter(annotation => {
+          if (annotation.deleted) return false;
           if (annotation.position) return manualAnnotationVisible(annotation);
           if (annotation.pageId !== "*" && annotation.pageId !== state.pageId) return false;
           if (state.modalId) return annotation.scope === "modal" && annotation.scopeId === state.modalId;
@@ -1146,7 +1162,7 @@
       function renderAnnotations() {
         const annotations = visibleAnnotations();
         $("#annotation-count").textContent = `${annotations.length} 项`;
-        const context = state.modalId ? `弹层 · ${state.modalId}` : state.tabId ? `页面 ${state.pageLabel} · Tab ${state.tabId}` : `页面 · ${state.pageLabel}`;
+        const context = annotationLocation({pageId: state.pageId, scope: state.modalId ? "modal" : state.tabId ? "tab" : "page", scopeId: state.modalId || state.tabId});
         $("#annotation-summary").textContent = context;
 
         const list = $("#annotation-list");
@@ -1160,12 +1176,12 @@
               <article class="annotation-card ${annotation.id === state.activeAnnotationId ? "is-active" : ""}" data-annotation-id="${annotation.id}" role="button" aria-label="在原型中打开标注 ${number}：${escapeHtml(annotation.title)}" tabindex="0">
                 <div class="annotation-number">${number}</div>
                 <div>
-                  <div class="annotation-heading"><h3>${escapeHtml(annotation.title)}</h3><button class="annotation-edit" type="button" data-edit-annotation="${annotation.id}" aria-label="编辑标注 ${number}">编辑</button></div>
+                  <div class="annotation-heading"><h3>${escapeHtml(annotation.title)}</h3><span class="annotation-actions"><button class="annotation-edit" type="button" data-edit-annotation="${annotation.id}" aria-label="编辑标注 ${number}">编辑</button><button class="annotation-delete" type="button" data-delete-annotation="${annotation.id}" aria-label="删除标注 ${number}">删除</button></span></div>
                   <div class="annotation-content markdown-preview">${offlineMarkdown.parse(annotation.body)}</div>
                   <div class="annotation-rules">${(annotation.businessRules || []).map(rule => `<p>${escapeHtml(rule)}</p>`).join("")}</div>
                   <footer>
                     <span class="tag scope-${annotation.scope}">${SCOPE_LABEL[annotation.scope] || annotation.scope}</span>
-                    <span class="tag">${escapeHtml(annotation.selector)}</span>
+                    <span class="tag">${escapeHtml(annotationLocation(annotation))}</span>
                   </footer>
                 </div>
               </article>
@@ -1255,7 +1271,7 @@
           </div>
           <p class="popover-body">${escapeHtml(annotation.body)}</p>
           ${annotation.businessRules?.length ? `<div class="annotation-rules"><strong>业务规则</strong><ul>${annotation.businessRules.map(rule => `<li>${escapeHtml(rule)}</li>`).join("")}</ul></div>` : ""}
-          <div class="popover-meta">${SCOPE_LABEL[annotation.scope]} · ${escapeHtml(annotation.selector)}</div>
+          <div class="popover-meta">${escapeHtml(annotationLocation(annotation))}</div>
         `;
         popover.hidden = false;
         renderAnnotations();
@@ -1268,9 +1284,32 @@
         renderAnnotations();
       }
 
+      function readablePageLabel(doc, pageId, label = "", index = 0) {
+        const node = doc.querySelector(`[data-page="${CSS.escape(pageId)}"], [data-vprd-page="${CSS.escape(pageId)}"]`);
+        const navigation = doc.querySelector(`[data-vprd-page-target="${CSS.escape(pageId)}"], nav [data-action="navigate:${CSS.escape(pageId)}"]`);
+        const candidates = [label, navigation?.textContent, node?.querySelector("h1, h2")?.textContent,
+          !node ? doc.querySelector("h1, h2")?.textContent : ""];
+        const chinese = candidates.find(text => text && /[\u3400-\u9fff]/.test(text));
+        return chinese?.trim() || ({login: "登录页", home: "首页", list: "列表页", detail: "详情页"})[pageId] || `页面 ${index + 1}`;
+      }
+
+      function annotationLocation(annotation) {
+        if (annotation.pageId === "*") return "所有页面";
+        const doc = frameDocument(), page = pageCatalog.find(item => item.id === annotation.pageId);
+        const name = page?.label || (doc ? readablePageLabel(doc, annotation.pageId) : "当前页面");
+        if (annotation.scope === "page") return `页面：${name}`;
+        const id = CSS.escape(annotation.scopeId || "");
+        const target = annotation.scope === "tab"
+          ? doc?.querySelector(`[data-tab-button="${CSS.escape(annotation.pageId)}:${id}"], [data-vprd-tab="${id}"]`)
+          : doc?.querySelector(`[data-modal="${id}"], [id="${id}"]`);
+        const text = (annotation.scope === "tab" ? target?.textContent : target?.querySelector("h1, h2, h3")?.textContent)?.trim();
+        const label = text && /[\u3400-\u9fff]/.test(text) ? text : "";
+        return `页面：${name} · ${SCOPE_LABEL[annotation.scope] || "当前位置"}${label ? `：${label}` : ""}`;
+      }
+
       function inferPageLabel(doc, pageId) {
         const target = doc.querySelector(`[data-vprd-page-target="${CSS.escape(pageId)}"]`);
-        return target?.textContent.trim() || doc.body.dataset.vprdPageLabel || pageId;
+        return readablePageLabel(doc, pageId, target?.textContent.trim() || doc.body.dataset.vprdPageLabel);
       }
 
       function syncPrototypeContext() {
@@ -1339,6 +1378,7 @@
             title: annotation.title,
             body: annotation.body,
             businessRules: annotation.businessRules || [],
+            deleted: Boolean(annotation.deleted),
             scope: { type: annotation.scope, id: annotation.scopeId },
           })),
           pageId: () => doc.body.dataset.annoPage || doc.body.dataset.vprdPage || state.pageId,
@@ -1465,7 +1505,7 @@
       }
 
       function manualAnnotationVisible(annotation) {
-        if (annotation.pageId !== state.pageId) return false;
+        if (annotation.deleted || annotation.pageId !== state.pageId) return false;
         if (annotation.scope === "tab" && annotation.scopeId !== state.tabId) return false;
         const doc = frameDocument();
         const target = doc?.querySelector(annotation.selector);
@@ -1518,7 +1558,7 @@
           scope: state.modalId ? "modal" : state.tabId ? "tab" : "page", scopeId: state.modalId || state.tabId || state.pageId,
           selector: annotationSelector(doc, target), position: {x: (x - rect.left) / rect.width, y: (y - rect.top) / rect.height}});
         setAnnotationPlacement(false);
-        renderAnnotations(); persistState(); editAnnotation(id);
+        renderAnnotations(); persistState(); editAnnotation(id, true);
       }
 
       function syncAnnotationDefinitions() {
@@ -1526,10 +1566,11 @@
           scope: { type: item.scope, id: item.scopeId } })) });
       }
 
-      function editAnnotation(id) {
+      function editAnnotation(id, creating = false) {
         const annotation = annotationById(id);
         if (!annotation) return;
         editingAnnotationId = id;
+        $("#annotation-editor-heading").textContent = creating ? "添加标注" : "编辑标注";
         $("#annotation-title").value = annotation.title;
         $("#annotation-body").value = annotation.body;
         $("#annotation-rules").value = (annotation.businessRules || []).join("\n");
@@ -1580,11 +1621,11 @@
         pageCatalog = [...doc.querySelectorAll("[data-page], .demo-page[data-vprd-page]")].map(node => ({
           id: node.dataset.page || node.dataset.vprdPage,
           nativeRoute: Boolean(frame.contentWindow.__proto?.navigate),
-          label: node.dataset.pageLabel || node.querySelector("h1, h2")?.textContent.trim() || node.dataset.page || node.dataset.vprdPage
+          label: readablePageLabel(doc, node.dataset.page || node.dataset.vprdPage, node.dataset.pageLabel, [...doc.querySelectorAll("[data-page], .demo-page[data-vprd-page]")].indexOf(node))
         })).filter((page, index, all) => all.findIndex(item => item.id === page.id) === index);
         if (!pageCatalog.length) pageCatalog = [{
           id: doc.body.dataset.annoPage || doc.body.dataset.vprdPage || "page",
-          label: doc.querySelector("h1, h2")?.textContent.trim() || doc.title || "当前页面",
+          label: readablePageLabel(doc, doc.body.dataset.annoPage || doc.body.dataset.vprdPage || "page", doc.title),
           nativeRoute: false
         }];
         $("#page-select").innerHTML = pageCatalog.map(page => `<option value="${escapeHtml(page.id)}">${escapeHtml(page.label)}</option>`).join("");
@@ -1782,6 +1823,22 @@
           });
         }
         $("#disk-save").addEventListener("click", authorizeDiskSave);
+        for (const id of ["annotation-editor-dismiss", "annotation-editor-cancel"]) {
+          $("#" + id).addEventListener("click", () => $("#annotation-editor-dialog").close());
+        }
+        $$('[data-cancel-delete]').forEach(button => button.addEventListener("click", () => $("#annotation-delete-dialog").close()));
+        $("#annotation-delete-confirm").addEventListener("click", async () => {
+          const annotation = annotationById(deletingAnnotationId);
+          if (!annotation) return;
+          annotation.deleted = true;
+          annotation.title = ""; annotation.body = ""; annotation.businessRules = [];
+          if (state.activeAnnotationId === annotation.id) closeAnnotation();
+          syncAnnotationDefinitions(); renderAnnotations();
+          await persistState();
+          if (fileHandle && diskRevision < revision) { showToast("删除已记入草稿，磁盘写回尚未成功，请检查顶部状态"); return; }
+          $("#annotation-delete-dialog").close();
+        });
+        $("#annotation-delete-dialog").addEventListener("close", () => { deletingAnnotationId = ""; });
         $("#annotation-editor-close").addEventListener("click", async () => {
           if (annotationById(editingAnnotationId)?.position && !$("#annotation-title").value.trim()) { showToast("请填写标注标题"); $("#annotation-title").focus(); return; }
           await flushSave();
@@ -1858,6 +1915,14 @@
           persistState();
         });
         document.addEventListener("click", event => {
+          const remove = event.target.closest("[data-delete-annotation]");
+          if (remove) {
+            deletingAnnotationId = remove.dataset.deleteAnnotation;
+            const annotation = annotationById(deletingAnnotationId);
+            $("#annotation-delete-message").textContent = `确定删除标注 ${annotation.order}“${annotation.title}”吗？`;
+            $("#annotation-delete-dialog").showModal();
+            return;
+          }
           if (event.target.closest("[data-edit-annotation]")) {
             editAnnotation(event.target.closest("[data-edit-annotation]").dataset.editAnnotation);
             return;
@@ -1870,6 +1935,8 @@
           }
           const card = event.target.closest("#annotation-list [data-annotation-id]");
           if (card) {
+            const selection = window.getSelection();
+            if (!selection.isCollapsed && card.contains(selection.anchorNode) && card.contains(selection.focusNode)) return;
             openAnnotation(card.dataset.annotationId);
             return;
           }

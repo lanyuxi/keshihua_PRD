@@ -9,7 +9,7 @@
   const HOST_ID = "visual-prd-annotation-runtime";
   const VALID_SCOPES = new Set(["page", "tab", "drawer", "modal"]);
   const LAYER_RANK = { page: 0, tab: 0, drawer: 1, modal: 2 };
-  const SCOPE_LABEL = { page: "页面", tab: "Tab", drawer: "抽屉", modal: "弹窗" };
+  const SCOPE_LABEL = { page: "页面", tab: "标签页", drawer: "抽屉", modal: "弹窗" };
   const DEFAULT_OPTIONS = {
     pageId: "",
     dotOffsetX: 6,
@@ -73,6 +73,7 @@
       pageId: normalizeText(input.pageId || "*").trim() || "*",
       title: normalizeText(input.title || "未命名标注"),
       body: normalizeText(input.body),
+      deleted: Boolean(input.deleted),
       businessRules: normalizeRules(input.businessRules),
       scope: {
         type: scopeType,
@@ -107,6 +108,8 @@
 
   function validateVisibleOrders(records) {
     const orders = records.map(record => record.definition.order).sort((left, right) => left - right);
+    const hasDeletion = [...state.definitions.values()].some(item => item.deleted && (item.pageId === state.currentPageId || item.pageId === "*"));
+    if (hasDeletion && new Set(orders).size === orders.length) return;
     const expected = Array.from({ length: records.length }, (_, index) => index + 1);
     if (orders.length !== expected.length || orders.some((order, index) => order !== expected[index])) {
       const detail = records.map(record => `${record.id}:${record.definition.order}`).join(", ");
@@ -232,6 +235,7 @@
       if (!isVisible(anchor)) return;
       const id = normalizeText(anchor.dataset.anno).trim();
       const definition = state.definitions.get(id);
+      if (definition?.deleted) return;
       if (!definition) {
         if (id && !state.missingIds.has(id)) {
           state.missingIds.add(id);
@@ -301,6 +305,7 @@
           font: 13px/1.55 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         }
         #${HOST_ID} .anno-panel[hidden] { display: none; }
+        #${HOST_ID} .anno-panel, #${HOST_ID} .content, #${HOST_ID} .content * { user-select: text; -webkit-user-select: text; }
         #${HOST_ID} .head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; padding: 16px 17px 11px; }
         #${HOST_ID} .meta { margin-bottom: 4px; color: #696f82; font-size: 10px; font-weight: 750; letter-spacing: .06em; text-transform: uppercase; }
         #${HOST_ID} h2 { margin: 0; font-size: 16px; line-height: 1.35; }
@@ -401,6 +406,14 @@
     const siblings = sameScopeRecords(record);
     const siblingIndex = siblings.findIndex(item => item.id === record.id);
     const canNavigate = siblings.length > 1;
+    const signature = JSON.stringify([definition, record.scope.key, siblings.map(item => [item.id, item.definition.order])]);
+    if (state.panel.dataset.contentSignature === signature) {
+      state.dotsRoot.querySelectorAll(".anno-dot").forEach(dot => dot.setAttribute("aria-expanded", String(dot.dataset.annotationId === record.id)));
+      state.panel.hidden = false;
+      schedulePosition();
+      return;
+    }
+    state.panel.dataset.contentSignature = signature;
 
     const head = createElement("div", "head");
     const heading = createElement("div");
@@ -444,7 +457,7 @@
     previous.type = "button";
     previous.dataset.annoAction = "previous";
     previous.disabled = !canNavigate;
-    const counter = createElement("span", "counter", `${definition.order} / ${siblings.length}`);
+    const counter = createElement("span", "counter", `共 ${siblings.length} 项`);
     const next = createElement("button", "nav", "下一条 →");
     next.type = "button";
     next.dataset.annoAction = "next";
@@ -558,7 +571,6 @@
         if (action === "close") closePanel();
         if (action === "previous") navigatePanel(-1);
         if (action === "next") navigatePanel(1);
-        setTimeout(refresh, 0);
         return;
       }
 

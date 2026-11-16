@@ -131,13 +131,10 @@
                     "type": "page",
                     "id": "list"
                   },
-                  "title": "创建入口",
-                  "rule_refs": [
-                    "RULE-001"
-                  ],
-                  "acceptance_refs": [
-                    "AC-001"
-                  ]
+                  "title": "新增任务",
+                  "rule_refs": [],
+                  "acceptance_refs": [],
+                  "summary": "点击后填写任务信息；提交成功后，新任务会出现在列表中。"
                 }
               }
             ]
@@ -167,7 +164,7 @@
                     "id": "filter-status",
                     "order": 6,
                     "title": "状态筛选器",
-                    "summary": "按状态筛选，可恢复全部状态"
+                    "summary": "选择状态后，只显示符合条件的任务；选择“全部”恢复显示。"
                   }
                 }
               ]
@@ -179,8 +176,8 @@
                 "annotation": {
                   "id": "field-title",
                   "order": 3,
-                  "title": "任务字段",
-                  "summary": "展示该字段；权限与格式规则待确认"
+                  "title": "任务",
+                  "summary": "显示任务名称。需要了解更多内容时，可点击这条任务的“查看详情”。"
                 }
               },
               {
@@ -189,8 +186,8 @@
                 "annotation": {
                   "id": "field-owner",
                   "order": 4,
-                  "title": "负责人字段",
-                  "summary": "展示该字段；权限与格式规则待确认"
+                  "title": "负责人",
+                  "summary": "显示这条任务的负责人。哪些人可以修改负责人，待确认。"
                 }
               },
               {
@@ -199,8 +196,8 @@
                 "annotation": {
                   "id": "field-status",
                   "order": 5,
-                  "title": "状态字段",
-                  "summary": "展示该字段；权限与格式规则待确认"
+                  "title": "状态",
+                  "summary": "显示任务当前进度，例如“待处理”或“进行中”。状态的变更权限待确认。"
                 }
               }
             ],
@@ -275,7 +272,8 @@
               "rule_refs": [
                 "RULE-001"
               ],
-              "acceptance_refs": []
+              "acceptance_refs": [],
+              "summary": "请填写新任务的名称。"
             }
           }
         ],

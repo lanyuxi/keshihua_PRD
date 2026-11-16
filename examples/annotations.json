@@ -15,11 +15,9 @@
     "id": "create-entry",
     "order": 2,
     "pageId": "list",
-    "title": "创建入口",
-    "body": "待确认\n验收：负责人填写任务名称后可成功提交。",
-    "businessRules": [
-      "任务名称不能为空。"
-    ],
+    "title": "新增任务",
+    "body": "点击后填写任务信息；提交成功后，新任务会出现在列表中。",
+    "businessRules": [],
     "scope": {
       "type": "page",
       "id": "list"
@@ -29,8 +27,8 @@
     "id": "field-title",
     "order": 3,
     "pageId": "list",
-    "title": "任务字段",
-    "body": "展示该字段；权限与格式规则待确认",
+    "title": "任务",
+    "body": "显示任务名称。需要了解更多内容时，可点击这条任务的“查看详情”。",
     "businessRules": [],
     "scope": {
       "type": "page",
@@ -41,8 +39,8 @@
     "id": "field-owner",
     "order": 4,
     "pageId": "list",
-    "title": "负责人字段",
-    "body": "展示该字段；权限与格式规则待确认",
+    "title": "负责人",
+    "body": "显示这条任务的负责人。哪些人可以修改负责人，待确认。",
     "businessRules": [],
     "scope": {
       "type": "page",
@@ -53,8 +51,8 @@
     "id": "field-status",
     "order": 5,
     "pageId": "list",
-    "title": "状态字段",
-    "body": "展示该字段；权限与格式规则待确认",
+    "title": "状态",
+    "body": "显示任务当前进度，例如“待处理”或“进行中”。状态的变更权限待确认。",
     "businessRules": [],
     "scope": {
       "type": "page",
@@ -66,7 +64,7 @@
     "order": 6,
     "pageId": "list",
     "title": "状态筛选器",
-    "body": "按状态筛选，可恢复全部状态",
+    "body": "选择状态后，只显示符合条件的任务；选择“全部”恢复显示。",
     "businessRules": [],
     "scope": {
       "type": "page",
@@ -92,7 +90,7 @@
     "order": 2,
     "pageId": "list",
     "title": "任务名称",
-    "body": "待确认",
+    "body": "请填写新任务的名称。",
     "businessRules": [
       "任务名称不能为空。"
     ],
