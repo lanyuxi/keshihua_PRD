@@ -89,23 +89,31 @@ def validate_frontmatter() -> None:
     match = re.match(r"^---\n(.*?)\n---\n", source, re.DOTALL)
     require(match is not None, "SKILL.md is missing YAML frontmatter")
     fields = {}
+    metadata = {}
     for line in match.group(1).splitlines():
         key, separator, value = line.partition(":")
         require(bool(separator), f"Invalid frontmatter line: {line}")
-        fields[key.strip()] = value.strip()
+        (metadata if key.startswith("  ") else fields)[key.strip()] = value.strip()
     require({"name", "description"}.issubset(fields), "Frontmatter requires name and description")
     require(fields["name"] == "visual-prd", "Unexpected skill identifier")
     require(bool(re.fullmatch(r"[a-z0-9-]+", fields["name"])), "Skill name must use lowercase hyphen-case")
     require(bool(fields["description"]), "Skill description cannot be empty")
     require("metadata" in fields, "Frontmatter requires metadata")
-    version = fields.get("version", "").strip("\"'")
+    version = metadata.get("version", "").strip("\"'")
     require(bool(re.fullmatch(r"\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?", version)), "metadata.version must use semantic versioning")
-    author = fields.get("author", "").strip("\"'")
+    author = metadata.get("author", "").strip("\"'")
     expected_author = "公众号“" + "A" + "I 翻车现场”的智障研究员"
     require(author == expected_author, "metadata.author does not match the declared original author")
-    require(fields.get("display_name_zh", "").strip('"\'') == "可视化 PRD", "Chinese display name is missing")
-    require(fields.get("icon", "").strip('"\'') == "assets/skill-icon.svg", "metadata.icon is invalid")
-    require(version == "4.2.3", "visual-prd version is not 4.2.3")
+    require(metadata.get("display_name_zh", "").strip('"\'') == "可视化 PRD", "Chinese display name is missing")
+    require(metadata.get("display_name_en", "").strip('"\'') == "Visual PRD", "English display name is missing")
+    require(bool(metadata.get("description_en", "").strip('"\'')), "English description is missing")
+    require(metadata.get("icon", "").strip('"\'') == "assets/skill-icon.svg", "metadata.icon is invalid")
+    require(version == "4.2.4", "visual-prd version is not 4.2.4")
+    publishing = ("version", "display_name", "display_name_en", "description_zh", "description_en")
+    if any(key in fields for key in publishing):
+        for key in publishing:
+            require(bool(fields.get(key, "").strip('"\'')), f"WorkBuddy requires top-level {key}")
+        require(fields["version"].strip('"\'') == version, "WorkBuddy version does not match metadata.version")
     for target in re.findall(r"\]\(([^)]+)\)", source):
         if "://" not in target and not target.startswith("#"):
             require((SKILL_ROOT / target).exists(), f"Broken local reference: {target}")

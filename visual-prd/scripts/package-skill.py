@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 import re
 import subprocess
 import sys
@@ -32,6 +33,20 @@ def skill_version() -> str:
     if not match:
         raise ValueError("SKILL.md metadata.version is missing")
     return match.group(1)
+
+
+def workbuddy_skill(source: str) -> str:
+    front = re.match(r"^---\n(.*?)\n---\n", source, re.DOTALL)
+    metadata = dict(re.findall(r"^  ([a-z_]+):\s*(.+)$", front.group(1), re.MULTILINE))
+    description = re.search(r"^description:\s*(.+)$", front.group(1), re.MULTILINE).group(1)
+    fields = dict(zip(
+        ("version", "display_name", "display_name_en", "description_zh", "description_en"),
+        (metadata["version"], metadata["display_name_zh"], metadata["display_name_en"], description, metadata["description_en"]),
+    ))
+    fields = {key: value.strip("\"'") for key, value in fields.items()}
+    header = "".join(f"{key}: {json.dumps(value, ensure_ascii=False)}\n" for key, value in fields.items())
+    original = re.sub(r"^(?:" + "|".join(fields) + r"):[^\n]*\n?", "", front.group(1), flags=re.MULTILINE)
+    return "---\n" + header + original + "\n---\n" + source[front.end():]
 
 
 def forbidden_marker(value: str) -> str | None:
@@ -88,7 +103,7 @@ def validate_neutral_contents(files: list[Path]) -> None:
             raise ValueError(f"Distribution text contains a platform marker: {relative}")
 
 
-def build_archive(output: Path, skillhub: bool = False) -> tuple[int, str]:
+def build_archive(output: Path, skillhub: bool = False, workbuddy: bool = False) -> tuple[int, str]:
     validator = SKILL_ROOT / "scripts" / "validate-package.py"
     subprocess.run([sys.executable, str(validator)], check=True)
     files = package_files()
@@ -99,7 +114,11 @@ def build_archive(output: Path, skillhub: bool = False) -> tuple[int, str]:
         text = path.read_text(encoding="utf-8")
         if "\0" in text:
             raise ValueError(f"SkillHub text file contains NUL: {path.name}")
-    expanded_bytes = sum(path.stat().st_size for path in files)
+    contents = {path: path.read_bytes() for path in files}
+    if workbuddy:
+        skill = SKILL_ROOT / "SKILL.md"
+        contents[skill] = workbuddy_skill(contents[skill].decode("utf-8")).encode("utf-8")
+    expanded_bytes = sum(len(data) for data in contents.values())
     if expanded_bytes > 3_145_728:
         raise ValueError(f"Expanded Skill exceeds 3,145,728 bytes: {expanded_bytes}; use lossless resource packing")
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -109,7 +128,7 @@ def build_archive(output: Path, skillhub: bool = False) -> tuple[int, str]:
             info = zipfile.ZipInfo(relative.as_posix(), date_time=(1980, 1, 1, 0, 0, 0))
             info.compress_type = zipfile.ZIP_DEFLATED
             info.external_attr = (0o755 if source.suffix in {".py", ".js"} else 0o644) << 16
-            archive.writestr(info, source.read_bytes())
+            archive.writestr(info, contents[source])
     if output.stat().st_size >= 3_000_000:
         raise ValueError("Skill ZIP exceeds the 3,000,000 byte distribution limit; do not remove content or reduce quality")
     digest = hashlib.sha256(output.read_bytes()).hexdigest()
@@ -120,11 +139,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Validate and package the Visual PRD skill.")
     parser.add_argument("--output", type=Path, help="Destination zip path")
     parser.add_argument("--skillhub", action="store_true", help="Compatibility flag; all packages now use the upload-ready layout")
-    parser.add_argument("--workbuddy", action="store_true", help="WorkBuddy upload filename; expanded content is always capped at 3 MiB")
+    parser.add_argument("--workbuddy", action="store_true", help="Add WorkBuddy publishing fields; expanded content is always capped at 3 MiB")
     args = parser.parse_args()
     version = skill_version()
     output = (args.output or (SKILL_ROOT / "releases" / "current" / f"{SKILL_ROOT.name}-{version}{'-workbuddy' if args.workbuddy else '-skillhub' if args.skillhub else ''}.zip")).resolve()
-    count, digest = build_archive(output, skillhub=args.skillhub)
+    count, digest = build_archive(output, skillhub=args.skillhub, workbuddy=args.workbuddy)
     print(f"PASS: packaged {SKILL_ROOT.name} {version} with {count} files to {output}")
     print(f"SHA-256: {digest}")
 

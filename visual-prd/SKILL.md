@@ -2,9 +2,11 @@
 name: visual-prd
 description: 将现有或新生成的 PRD、交互原型与业务标注装配为同屏离线评审页；已有 HTML 尚无标注时，先建立可核对的标注数据和页面锚点。支持原型任意点位手工添加标注、原型文案编辑、逐条标注编辑/删除与图片粘贴、授权后自动写回 HTML、Mermaid 流程图离线预览和无标注交互页面导出。适用于需求评审、原型标注或已有 HTML 增强；不用于只写普通 PRD 或交付最终高保真视觉稿。
 metadata:
-  version: "4.2.3"
+  version: "4.2.4"
   author: '公众号“AI 翻车现场”的智障研究员'
   display_name_zh: "可视化 PRD"
+  display_name_en: "Visual PRD"
+  description_en: "Assemble product requirements, interactive HTML prototypes and page annotations into an offline review page. Enhance existing prototypes or generate from confirmed requirements; supports annotation editing, flowcharts, authorized HTML write-back and interactive page export."
   icon: "assets/skill-icon.svg"
 ---
 
@@ -97,4 +99,6 @@ python3 scripts/build-review.py visual-prd.project.json
 
 三项大型离线资源采用 `.packed.txt` 无损文本存储，构建器用标准库在内存中校验并解码，不联网、不写出额外解压文件。查看或修改容器模板前，使用 `python3 scripts/resource_io.py assets/container-template.html --output /tmp/container-template.html` 获取完整原文；修改后用该工具的 `--pack --output` 写回对应 packed 文件。不要直接改编码数据，也不要把临时原文同时放回技能目录。
 
-运行 `python3 scripts/validate-package.py`，再运行 `python3 scripts/package-skill.py`。不得手工压缩；压缩包必须离线、自包含、无系统垃圾和平台专属元数据，并保留原作者署名。
+运行 `python3 scripts/validate-package.py`，再运行 `python3 scripts/package-skill.py`。不得手工压缩；压缩包必须离线、自包含、无系统垃圾和无关平台元数据，并保留原作者署名。
+
+上传 WorkBuddy 时使用 `package-skill.py --workbuddy`，从本入口元数据生成平台要求的五个顶层发布字段；普通包保留通用技能格式。不要用普通包代替 WorkBuddy 专用包。
