@@ -10,6 +10,7 @@ import sys
 import tempfile
 import json
 from pathlib import Path
+from resource_io import read_resource, packed_path
 
 
 SKILL_ROOT = Path(__file__).resolve().parent.parent
@@ -73,6 +74,7 @@ REQUIRED_FILES = (
     "scripts/annotation-runtime.js",
     "scripts/ui-configurator-runtime.js",
     "scripts/package-skill.py",
+    "scripts/resource_io.py",
 )
 IGNORED_SYSTEM_FILES = {".DS_Store", "Thumbs.db", "desktop.ini"}
 
@@ -103,7 +105,7 @@ def validate_frontmatter() -> None:
     require(author == expected_author, "metadata.author does not match the declared original author")
     require(fields.get("display_name_zh", "").strip('"\'') == "可视化 PRD", "Chinese display name is missing")
     require(fields.get("icon", "").strip('"\'') == "assets/skill-icon.svg", "metadata.icon is invalid")
-    require(version == "4.2.2", "visual-prd version is not 4.2.2")
+    require(version == "4.2.3", "visual-prd version is not 4.2.3")
     for target in re.findall(r"\]\(([^)]+)\)", source):
         if "://" not in target and not target.startswith("#"):
             require((SKILL_ROOT / target).exists(), f"Broken local reference: {target}")
@@ -113,7 +115,7 @@ def validate_icon() -> None:
     import base64
     import xml.etree.ElementTree as ET
     for name, size in (("skill-icon", 1024), ("brand-logo", 1254)):
-        svg = ET.parse(SKILL_ROOT / f"assets/{name}.svg").getroot()
+        svg = ET.fromstring(read_resource(SKILL_ROOT / f"assets/{name}.svg"))
         require(svg.get("viewBox") == f"0 0 {size} {size}", "SVG must preserve original dimensions")
         image = svg.find("{http://www.w3.org/2000/svg}image")
         require(image is not None, "SVG must contain original image")
@@ -128,7 +130,7 @@ def validate_icon() -> None:
 
 def validate_templates() -> None:
     prototype = (SKILL_ROOT / "assets/prototype-template.html").read_text(encoding="utf-8")
-    container = (SKILL_ROOT / "assets/container-template.html").read_text(encoding="utf-8")
+    container = read_resource(SKILL_ROOT / "assets/container-template.html").decode("utf-8")
     for marker in ("/*__ANNOTATION_RUNTIME__*/", "__ANNOTATION_DATA__", "prototype-runtime.js"):
         require(marker in prototype, f"Prototype template is missing {marker}")
     for marker in (
@@ -564,7 +566,7 @@ def validate_hygiene() -> None:
 
 
 def main() -> None:
-    missing = [name for name in REQUIRED_FILES if not (SKILL_ROOT / name).is_file()]
+    missing = [name for name in REQUIRED_FILES if not (SKILL_ROOT / name).is_file() and not packed_path(SKILL_ROOT / name).is_file()]
     require(not missing, f"Missing required files: {', '.join(missing)}")
     validate_hygiene()
     validate_frontmatter()

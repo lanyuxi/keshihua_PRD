@@ -12,6 +12,7 @@ import sys
 from pathlib import Path
 
 from ui_profile import load_ui_profile
+from resource_io import read_resource
 
 
 SKILL_ROOT = Path(__file__).resolve().parent.parent
@@ -283,9 +284,9 @@ def build(
     flows_path: Path | None = None,
 ) -> None:
     template = strip_demo_fallbacks(
-        (SKILL_ROOT / "assets/container-template.html").read_text(encoding="utf-8")
+        read_resource(SKILL_ROOT / "assets/container-template.html").decode("utf-8")
     )
-    mermaid = (SKILL_ROOT / "assets/mermaid.min.js").read_text(encoding="utf-8")
+    mermaid = read_resource(SKILL_ROOT / "assets/mermaid.min.js").decode("utf-8")
     template = template.replace("/*__MERMAID_RUNTIME__*/", mermaid.replace("</script", "<\\/script"), 1)
     text_runtime = (SKILL_ROOT / "scripts/prototype-text-runtime.js").read_text(encoding="utf-8")
     template = template.replace("/*__PROTOTYPE_TEXT_RUNTIME__*/", text_runtime.replace("</script", "<\\/script"), 1)
@@ -353,7 +354,7 @@ def build(
     )
     page = page.replace("__VISUAL_PRD_DEVELOPER_BASE64__", encode_payload(developer_source(prototype_source)), 1)
     page = page.replace("__VISUAL_PRD_FLOWS_BASE64__", encode_payload(flows_markdown), 1)
-    logo = base64.b64encode((SKILL_ROOT / "assets/brand-logo.svg").read_bytes()).decode("ascii")
+    logo = base64.b64encode(read_resource(SKILL_ROOT / "assets/brand-logo.svg")).decode("ascii")
     page = page.replace('src="brand-logo.svg"', f'src="data:image/svg+xml;base64,{logo}"', 1)
     unresolved = [
         marker for marker in (

@@ -2,14 +2,14 @@
 
 把产品说明、可交互 HTML 原型和页面标注放在同一个离线网页中，支持本地修改、授权后自动写回 HTML，以及导出供前端继续开发的页面。
 
-**当前版本：4.2.2。** 本仓库提供可复用的 `visual-prd` 技能、容器模板、构建脚本和完整演示。流程图使用可读的 **Mermaid Markdown 源码**：编辑节点和连线，预览时自动生成图，并保留配套的流程文字说明。
+**当前版本：4.2.3。** 本仓库提供可复用的 `visual-prd` 技能、容器模板、构建脚本和完整演示。流程图使用可读的 **Mermaid Markdown 源码**：编辑节点和连线，预览时自动生成图，并保留配套的流程文字说明。
 
-4.2.2 以用户提供的 **`visual-prd-aifanche-4.0.2.zip` 原版包为基础**，保留原版三种工作模式、产品模型、界面规范配置器、需求交接、指标定义和评审模式，再加入 2.2.1 的定制能力及说明栏目、流程图查看需求。2.2.1 是新增能力的来源。
+4.2.3 以用户提供的 **`visual-prd-aifanche-4.0.2.zip` 原版包为基础**，保留原版三种工作模式、产品模型、界面规范配置器、需求交接、指标定义和评审模式，再加入 2.2.1 的定制能力及说明栏目、流程图查看需求。2.2.1 是新增能力的来源。
 
-原包文件名及发布元数据标为 4.0.2，包内技能正文标为 4.1.4；这是原包自带的标注差异。4.2.2 是本仓库的增强版本，原包 `_meta.json` 保留原样。兼容复核见 [4.2.2 验证记录](docs/verification-4.2.2.md)。
+原包文件名及发布元数据标为 4.0.2，包内技能正文标为 4.1.4；这是原包自带的标注差异。4.2.3 是本仓库的增强版本，原包 `_meta.json` 保留原样。兼容复核见 [4.2.3 验证记录](docs/verification-4.2.3.md)。
 
-- [下载 SkillHub 上传专用包](dist/visual-prd-4.2.2-skillhub.zip)（根目录直接包含 SKILL.md）
-- [下载通用技能压缩包](dist/visual-prd-4.2.2.zip)
+- [下载 WorkBuddy／SkillHub 通用上传包](dist/visual-prd-4.2.3-workbuddy.zip)（根目录直接包含 SKILL.md，解压后小于 3 MiB）
+- [下载同内容通用文件名压缩包](dist/visual-prd-4.2.3.zip)
 - [下载离线演示 HTML](examples/visual-prd-demo.html)（下载到本地后用浏览器打开）
 - [查看技能说明](visual-prd/SKILL.md)
 - [查看流程图示例源码](examples/flows.md)
@@ -46,7 +46,7 @@
 
 这张截图由用户提供，展示左侧跨页面产品说明、中间可交互原型、右侧当前页面标注，以及顶部的栏位开关、页面下载和磁盘写回入口。右侧标注支持文字编辑和图片展示。
 
-图中的“项目工作台”用于展示评审容器的界面；仓库附带的 4.2.2 可运行演示为“任务看板”，包含任务列表、详情标签和创建弹层。截图用于展示容器布局，不是 4.2.2 演示的截图。
+图中的“项目工作台”用于展示评审容器的界面；仓库附带的 4.2.3 可运行演示为“任务看板”，包含任务列表、详情标签和创建弹层。截图用于展示容器布局，不是 4.2.3 演示的截图。
 
 ## 快速体验
 
@@ -98,15 +98,16 @@ keshihua_PRD/
 │   ├── prototype-source.html         派生的原型源文件
 │   ├── prd.md                        派生的 PRD
 │   ├── annotations.json              派生的标注数据
-│   └── visual-prd-demo.html           已构建的 4.2.2 离线演示
+│   └── visual-prd-demo.html           已构建的 4.2.3 离线演示
 ├── dist/
-│   ├── visual-prd-4.2.2.zip           当前可分发技能包
+│   ├── visual-prd-4.2.3.zip           当前可分发技能包
 │   ├── visual-prd-4.1.7.zip           历史增强版本
 │   ├── visual-prd-4.1.6.zip           历史增强版本
 │   └── visual-prd-2.2.1.zip           历史定制版本
 └── docs/
     ├── screenshots/visual-prd-overview.png  用户指定的唯一截图
-    ├── verification-4.2.2.md          当前纯文本上传兼容验证
+    ├── verification-4.2.3.md          当前解压体积与无损资源验证
+    ├── verification-4.2.2.md          纯文本上传兼容验证
     ├── verification-4.2.1.md          标注操作与阅读验证
     ├── verification-4.2.0.md          人工标注、流程图与无损压缩验证
     ├── verification-4.1.11.md         左栏与自动保存验证
@@ -272,12 +273,12 @@ node visual-prd/scripts/check-interactions.js examples/prototype-source.html
 
 # 按 SKILL.md 中的版本生成分发包
 python3 visual-prd/scripts/package-skill.py \
-  --output dist/visual-prd-4.2.2.zip
+  --output dist/visual-prd-4.2.3.zip
 ```
 
 静态检查通过后，还应在真实浏览器中操作导航、弹层、输入、校验、标注编辑和下载。验证磁盘保存时，检查实际文件并从新路径重开，避免只验证了浏览器草稿。
 
-4.2.2 的新增能力、后台逐字段说明、开发导出、原有交互回归及无损压缩证据见 [当前验证记录](docs/verification-4.2.2.md)。保留原有技能资料与离线依赖，不以删功能、删文档、缩图或减色换取体积。
+4.2.3 的新增能力、后台逐字段说明、开发导出、原有交互回归及无损压缩证据见 [当前验证记录](docs/verification-4.2.3.md)。保留原有技能资料与离线依赖，不以删功能、删文档、缩图或减色换取体积。
 
 ## 标注关闭、删除与阅读
 
@@ -299,22 +300,37 @@ python3 visual-prd/scripts/package-skill.py \
 
 流程图默认随左栏宽度等比显示。在图上滚动可围绕光标所在位置缩放，按住空格键配合左键拖动；点击进入全屏后操作相同，“适应屏幕”重置位置与缩放。拖动结束不会误触全屏，PNG 下载使用完整原图，临时平移缩放不进入导出图片。
 
-## 官方名称与 3 MB 分发包
+## 官方名称与平台上传限制
 
 官方中文显示名为 **可视化 PRD**，技术调用名和目录保持 `visual-prd`，兼容已有用法。左上角使用用户提供的新版渐变蓝色 PRD 图标。
 
-技能 ZIP 使用标准 Deflate，构建器强制小于 **3,000,000 字节**。图片使用 SVG 文本封装，内部嵌入原始无损 WebP 字节，不改分辨率、颜色或透明度。新 Logo 保留 1254 × 1254，原技能图标保留 1024 × 1024；两图原始字节与浏览器渲染像素逐一校验一致。Mermaid 原库、许可证、全部脚本、模板、参考资料与原作者署名完整保留。
+打包器同时强制两项限制：**ZIP 小于 3,000,000 字节**，以及 **所有文件的解压后字节总和不超过 3,145,728 字节**。超过任一限制直接报错，不自动丢弃内容。
 
-SkillHub 会跳过独立 WebP 等二进制文件。4.2.2 的上传包全部采用 UTF-8 文本，SVG 是完整的文本图片，无需运行时解包、联网下载或重新生成图片。上传专用包直接在 ZIP 根目录放 SKILL.md，保留全部 61 项资源。
+4.2.3 上传包 ZIP 为 **2,286,671 字节**，解压后总量为 **3,137,934 字节**，低于 WorkBuddy 报错中的 3,145,728 字节限制。
 
-在网站点击“重新上传（清空）”，再选择上方的 **SkillHub 上传专用包**，避免旧包的残留文件继续触发提示。使用网站单独的“图标”上传入口时，按该入口要求选择原图即可；这与技能文件上传是两个入口。
+三项大资源——完整 Mermaid 库、评审容器模板、Logo SVG——用 XZ 与 Base85 无损文本存储，并记录原始字节数和 SHA256。构建器使用 Python 标准库在内存中恢复原文并核对，不联网、不下载依赖、不在技能目录释放额外文件。原 61 项逻辑资源全部保留，加一项读取工具后共 62 个物理文件；图片分辨率、颜色和透明度不变，原作者署名及许可证保留。
+
+恢复的三项资源和构建得到的完整评审 HTML，均与 4.2.2 逐字节相同。可读原文另保留在仓库 [source-assets](source-assets/) 中供查看，不需要作为技能文件上传。
+
+上传包全部为 UTF-8 文本，不含独立二进制图片或嵌套二进制压缩包；图像内容仍为原始无损图像。ZIP 根目录直接包含 SKILL.md，可用于 WorkBuddy 及 SkillHub。手动安装时先新建 visual-prd 目录，再将内容解压到其中。
+
+在网站清空旧上传内容，再选择上方的 **4.2.3 上传包**。不要上传整个 GitHub 仓库或 source-assets 目录；原文已无损包含在技能的压缩文本资源中。网站单独的“图标”入口仍按其要求选择原图。
 
 ```bash
-python3 visual-prd/scripts/package-skill.py --skillhub \
-  --output dist/visual-prd-4.2.2-skillhub.zip
+python3 visual-prd/scripts/package-skill.py --workbuddy \
+  --output dist/visual-prd-4.2.3-workbuddy.zip
 ```
 
-当前网页公开脚本校验解压后文件总量不超过 10 MiB；本地预检同时检查禁止扩展名、UTF-8、空字节、文件数和根目录结构。ZIP 的 3 MB 约束继续保留，解压目录大小另计。此检查不等于网站服务端接收或审核通过，详见 [4.2.2 验证记录](docs/verification-4.2.2.md)。
+检查以 ZIP 中每个文件的 file_size 总和为准，不能用 ZIP 文件本身大小代替。完整验证、原文校验、从干净上传包构建及超限负测见 [4.2.3 验证记录](docs/verification-4.2.3.md)。本次未代用户提交网站审核。
+
+需要查看容器模板时，在仓库根目录运行：
+
+```bash
+python3 visual-prd/scripts/resource_io.py assets/container-template.html \
+  --output /tmp/container-template.html
+```
+
+修改可读原文后，可用 resource_io.py 的 --pack 和 --output 更新相应 .packed.txt；不要手工修改编码内容，也不要将临时原文重复放进技能目录。
 
 ## 常见问题
 
@@ -329,6 +345,8 @@ python3 visual-prd/scripts/package-skill.py --skillhub \
 **可以装入任意第三方网页吗？** 当前容器会读取原型 DOM 以定位标注，只应装入经检查的当前任务原型。信任边界与移植要求见 [安全与可移植性指南](visual-prd/references/security-and-portability.md)。
 
 ## 版本与依赖
+
+4.2.3 修复 WorkBuddy 解压体积限制：三项大资源采用可校验的无损文本压缩，默认包根目录为 SKILL.md，同时校验 ZIP 及解压总大小，保留全部内容与功能。
 
 4.2.2 修复 SkillHub 跳过二进制图片：使用同图像字节的 SVG 文本封装，提供根目录包含 SKILL.md 的纯文本上传包；保留全部功能与离线依赖。
 

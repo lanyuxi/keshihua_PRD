@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const assert = require('node:assert/strict');
-const template = fs.readFileSync(path.join(__dirname, '../assets/container-template.html'), 'utf8');
+const template = require('node:child_process').execFileSync(process.env.PYTHON || 'python3', [path.join(__dirname, 'resource_io.py'), path.join(__dirname, '../assets/container-template.html')], {encoding: 'utf8'});
 const source = template.slice(template.indexOf('      function persistState()'), template.indexOf('      function showToast('));
 function fixture() {
   const ui = {}, writes = [], messages = [];
