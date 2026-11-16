@@ -19,7 +19,7 @@ NEUTRAL_EXCLUDES = {
     "assets/skill-cover.png",
     "assets/skill-cover-landscape.png",
 }
-TEXT_SUFFIXES = {".md", ".html", ".css", ".js", ".py", ".json", ".yaml", ".yml", ".txt"}
+TEXT_SUFFIXES = {".md", ".html", ".css", ".js", ".py", ".json", ".yaml", ".yml", ".txt", ".svg"}
 
 
 def skill_version() -> str:
@@ -78,20 +78,31 @@ def validate_neutral_contents(files: list[Path]) -> None:
         # Keep the third-party Mermaid distribution unmodified, including identifiers.
         if relative == "assets/mermaid.min.js":
             continue
-        marker = forbidden_marker(path.read_text(encoding="utf-8"))
+        source = path.read_text(encoding="utf-8")
+        if path.suffix.lower() == ".svg":
+            source = re.sub(r"data:image/webp;base64,[A-Za-z0-9+/=]+", "", source)
+        marker = forbidden_marker(source)
         if marker:
             raise ValueError(f"Distribution text contains a platform marker: {relative}")
 
 
-def build_archive(output: Path) -> tuple[int, str]:
+def build_archive(output: Path, skillhub: bool = False) -> tuple[int, str]:
     validator = SKILL_ROOT / "scripts" / "validate-package.py"
     subprocess.run([sys.executable, str(validator)], check=True)
     files = package_files()
     validate_neutral_contents(files)
+    for path in files:
+        if path.suffix.lower() not in TEXT_SUFFIXES:
+            raise ValueError(f"SkillHub requires text files: {path.name}")
+        text = path.read_text(encoding="utf-8")
+        if "\0" in text:
+            raise ValueError(f"SkillHub text file contains NUL: {path.name}")
     output.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
         for source in files:
-            relative = Path(SKILL_ROOT.name) / source.relative_to(SKILL_ROOT)
+            relative = source.relative_to(SKILL_ROOT)
+            if not skillhub:
+                relative = Path(SKILL_ROOT.name) / relative
             info = zipfile.ZipInfo(relative.as_posix(), date_time=(1980, 1, 1, 0, 0, 0))
             info.compress_type = zipfile.ZIP_DEFLATED
             info.external_attr = (0o755 if source.suffix in {".py", ".js"} else 0o644) << 16
@@ -105,10 +116,11 @@ def build_archive(output: Path) -> tuple[int, str]:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Validate and package the Visual PRD skill.")
     parser.add_argument("--output", type=Path, help="Destination zip path")
+    parser.add_argument("--skillhub", action="store_true", help="Text-only upload package with SKILL.md at the ZIP root")
     args = parser.parse_args()
     version = skill_version()
-    output = (args.output or (SKILL_ROOT / "releases" / "current" / f"{SKILL_ROOT.name}-{version}.zip")).resolve()
-    count, digest = build_archive(output)
+    output = (args.output or (SKILL_ROOT / "releases" / "current" / f"{SKILL_ROOT.name}-{version}{'-skillhub' if args.skillhub else ''}.zip")).resolve()
+    count, digest = build_archive(output, skillhub=args.skillhub)
     print(f"PASS: packaged {SKILL_ROOT.name} {version} with {count} files to {output}")
     print(f"SHA-256: {digest}")
 

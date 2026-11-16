@@ -39,8 +39,8 @@ REQUIRED_FILES = (
     "assets/product-model-template.json",
     "assets/ui-profile-template.json",
     "assets/project-manifest-template.json",
-    "assets/skill-icon.webp",
-    "assets/brand-logo.webp",
+    "assets/skill-icon.svg",
+    "assets/brand-logo.svg",
     "assets/mermaid.min.js",
     "assets/mermaid-LICENSE.txt",
     "references/editing-and-export.md",
@@ -92,7 +92,7 @@ def validate_frontmatter() -> None:
         require(bool(separator), f"Invalid frontmatter line: {line}")
         fields[key.strip()] = value.strip()
     require({"name", "description"}.issubset(fields), "Frontmatter requires name and description")
-    require(fields["name"] == SKILL_ROOT.name, "Skill name must match its directory")
+    require(fields["name"] == "visual-prd", "Unexpected skill identifier")
     require(bool(re.fullmatch(r"[a-z0-9-]+", fields["name"])), "Skill name must use lowercase hyphen-case")
     require(bool(fields["description"]), "Skill description cannot be empty")
     require("metadata" in fields, "Frontmatter requires metadata")
@@ -102,18 +102,27 @@ def validate_frontmatter() -> None:
     expected_author = "公众号“" + "A" + "I 翻车现场”的智障研究员"
     require(author == expected_author, "metadata.author does not match the declared original author")
     require(fields.get("display_name_zh", "").strip('"\'') == "可视化 PRD", "Chinese display name is missing")
-    require(fields.get("icon", "").strip('"\'') == "assets/skill-icon.webp", "metadata.icon is invalid")
-    require(version == "4.2.1", "visual-prd version is not 4.2.1")
+    require(fields.get("icon", "").strip('"\'') == "assets/skill-icon.svg", "metadata.icon is invalid")
+    require(version == "4.2.2", "visual-prd version is not 4.2.2")
     for target in re.findall(r"\]\(([^)]+)\)", source):
         if "://" not in target and not target.startswith("#"):
             require((SKILL_ROOT / target).exists(), f"Broken local reference: {target}")
 
 
 def validate_icon() -> None:
-    data = (SKILL_ROOT / "assets/skill-icon.webp").read_bytes()
-    require(data[:4] == b"RIFF" and data[8:12] == b"WEBP" and data[12:16] == b"VP8L", "skill icon must be lossless WebP")
-    dimensions = int.from_bytes(data[21:25], "little")
-    require((dimensions & 0x3fff) + 1 == 1024 and ((dimensions >> 14) & 0x3fff) + 1 == 1024, "skill icon must retain 1024x1024 pixels")
+    import base64
+    import xml.etree.ElementTree as ET
+    for name, size in (("skill-icon", 1024), ("brand-logo", 1254)):
+        svg = ET.parse(SKILL_ROOT / f"assets/{name}.svg").getroot()
+        require(svg.get("viewBox") == f"0 0 {size} {size}", "SVG must preserve original dimensions")
+        image = svg.find("{http://www.w3.org/2000/svg}image")
+        require(image is not None, "SVG must contain original image")
+        href = image.get("href", "")
+        require(href.startswith("data:image/webp;base64,"), "SVG image must be embedded and offline")
+        data = base64.b64decode(href.split(",", 1)[1], validate=True)
+        require(data[:4] == b"RIFF" and data[8:12] == b"WEBP" and data[12:16] == b"VP8L", "SVG must embed lossless WebP")
+        dimensions = int.from_bytes(data[21:25], "little")
+        require((dimensions & 0x3fff) + 1 == size and ((dimensions >> 14) & 0x3fff) + 1 == size, "Embedded image must preserve original pixels")
 
 
 
