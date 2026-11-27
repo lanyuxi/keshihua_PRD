@@ -29,6 +29,7 @@ async function main() {
     if (process.argv.includes('--seeded')) {
       await page.locator('#annotation-page-notes table').getByText('团队负责人').waitFor();
       await card.locator('table').getByText('负责人', {exact: true}).waitFor();
+      assert.deepEqual(await card.locator('table th').allTextContents(), ['区域', '字段名称', '字段逻辑', '备注']);
     }
     if (process.env.PREVIEW_SCREENSHOT) await page.screenshot({path: process.env.PREVIEW_SCREENSHOT});
     const dot = frame.locator('.anno-dot[data-annotation-id="task-overview"]');
@@ -45,10 +46,18 @@ async function main() {
     assert((await page.locator('#annotation-body').inputValue()).trim(), '旧正文保留在可编辑的交互模块');
     await page.locator('#annotation-body').fill('点击列表项查看详情');
     await page.locator('#annotation-status').fill('待处理 → 已完成');
-    await page.locator('#annotation-fields').fill('| 字段 | 含义 |\n| --- | --- |\n| 负责人 | 当前处理人 |');
+    await page.locator('#annotation-fields').fill('| 区域 | 字段 |\n| --- | --- |\n| 列表字段 | 负责人 |');
     await page.locator('#annotation-sorting').fill('按更新时间倒序');
     await page.locator('#annotation-editor-close').click();
     await card.locator('table').waitFor();
+    assert.deepEqual(await card.locator('table th').allTextContents(), ['区域', '字段名称', '字段逻辑', '备注']);
+    assert.deepEqual(await card.locator('table tbody td').allTextContents(), ['列表字段', '负责人', '', '']);
+    await page.locator('[data-edit-annotation="task-overview"]').click();
+    assert.match(await page.locator('#annotation-fields').inputValue(), /\| 区域 \| 字段名称 \| 字段逻辑 \| 备注 \|/);
+    await page.locator('#annotation-fields').fill('| 区域 | 字段 | 备注 |\n| --- | --- | --- |\n| 列表字段 | 负责人 | 旧备注 |');
+    assert.deepEqual(await card.locator('table tbody td').allTextContents(), ['列表字段', '负责人', '', '旧备注']);
+    await page.locator('#annotation-fields').fill('| 区域 | 字段名称 | 字段逻辑 | 备注 |\n| --- | --- | --- | --- |\n| 列表字段 | 负责人 | 当前处理人 | 支持筛选 |');
+    await page.locator('#annotation-editor-close').click();
     assert((await card.innerText()).includes('按更新时间倒序'));
     await page.locator('#page-select').selectOption('detail');
     await page.waitForFunction(() => document.querySelector('#annotation-summary').textContent.includes('任务详情'));
@@ -68,6 +77,7 @@ async function main() {
     const reopened = await clean.newPage();
     await reopened.goto(url + '/saved');
     await reopened.locator('#annotation-list [data-annotation-id="task-overview"] table').waitFor();
+    assert.deepEqual(await reopened.locator('#annotation-list [data-annotation-id="task-overview"] table tbody td').allTextContents(), ['列表字段', '负责人', '当前处理人', '支持筛选']);
     await reopened.locator('#annotation-page-notes').getByText('仅展示可访问的任务', {exact: true}).waitFor();
     assert((await reopened.locator('#annotation-list').innerText()).includes('待处理 → 已完成'));
     const download = page.waitForEvent('download');
@@ -83,6 +93,7 @@ async function main() {
     const heading = await frame.getByRole('heading', {name: '任务看板', exact: true}).boundingBox();
     await page.mouse.click(heading.x + heading.width / 2, heading.y + heading.height / 2);
     await page.locator('#annotation-editor-dialog[open]').waitFor();
+    assert.match(await page.locator('#annotation-fields').inputValue(), /^\| 区域 \| 字段名称 \| 字段逻辑 \| 备注 \|/);
     await page.locator('#annotation-title').fill('新增状态标注');
     await page.locator('#annotation-status').fill('提交后待处理');
     await page.locator('#annotation-editor-close').click();

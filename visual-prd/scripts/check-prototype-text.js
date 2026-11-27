@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 // Verify the real applier can run independently in exported developer pages.
-const fs = require('node:fs'), path = require('node:path'), vm = require('node:vm'), assert = require('node:assert/strict');
+const {execFileSync} = require('node:child_process');
+const path = require('node:path'), vm = require('node:vm'), assert = require('node:assert/strict');
 const context = {window: {}};
-vm.runInNewContext(fs.readFileSync(path.join(__dirname, 'prototype-text-runtime.js'), 'utf8'), context);
+const source = execFileSync(process.env.PYTHON || 'python3', [path.join(__dirname, 'resource_io.py'), path.join(__dirname, 'prototype-text-runtime.js')], {encoding: 'utf8'});
+vm.runInNewContext(source, context);
 const text = {nodeType: 3, nodeValue: '原表头'};
 const icon = {nodeType: 1};
 const element = {childNodes: [icon, text]};

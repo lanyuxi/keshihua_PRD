@@ -2,7 +2,7 @@
 name: visual-prd
 description: 将现有或新生成的 PRD、交互原型与业务标注装配为同屏离线评审页；已有 HTML 尚无标注时，先建立可核对的标注数据和页面锚点。支持原型任意点位手工添加标注、原型文案编辑、逐条标注编辑/删除与图片粘贴、授权后自动写回 HTML、Mermaid 流程图离线预览和无标注交互页面导出。适用于需求评审、原型标注或已有 HTML 增强；不用于只写普通 PRD 或交付最终高保真视觉稿。
 metadata:
-  version: "4.2.5"
+  version: "4.2.6"
   author: '公众号“AI 翻车现场”的智障研究员'
   display_name_zh: "可视化 PRD"
   display_name_en: "Visual PRD"
@@ -98,7 +98,7 @@ python3 scripts/build-review.py visual-prd.project.json
 
 正式中文显示名为“可视化 PRD”，技术调用名 `visual-prd` 保持兼容。分发 ZIP 必须小于 3,000,000 字节，且解压后所有文件总和不得超过 3,145,728 字节；上传包只包含 UTF-8 文本文件，图片使用内嵌原始无损图像的 SVG 文本封装，不上传独立二进制图片。SkillHub 包根目录直接放 SKILL.md。只用无损资源编码，不删减功能、脚本、模板、参考资料或离线依赖，不缩图、不减色。图片转换须核对原尺寸和 RGBA 像素一致，保留原作者署名。
 
-三项大型离线资源采用 `.packed.txt` 无损文本存储，构建器用标准库在内存中校验并解码，不联网、不写出额外解压文件。查看或修改容器模板前，使用 `python3 scripts/resource_io.py assets/container-template.html --output /tmp/container-template.html` 获取完整原文；修改后用该工具的 `--pack --output` 写回对应 packed 文件。不要直接改编码数据，也不要把临时原文同时放回技能目录。
+部分离线资源采用 `.packed.txt` 无损文本存储，构建器用标准库在内存中校验并解码，不联网、不写出额外解压文件。查看或修改容器模板前，使用 `python3 scripts/resource_io.py assets/container-template.html --output /tmp/container-template.html` 获取完整原文；修改后用该工具的 `--pack --output` 写回对应 packed 文件。不要直接改编码数据，也不要把临时原文同时放回技能目录。
 
 运行 `python3 scripts/validate-package.py`，再运行 `python3 scripts/package-skill.py`。不得手工压缩；压缩包必须离线、自包含、无系统垃圾和无关平台元数据，并保留原作者署名。
 
