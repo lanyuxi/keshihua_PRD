@@ -108,7 +108,7 @@ def validate_frontmatter() -> None:
     require(metadata.get("display_name_en", "").strip('"\'') == "Visual PRD", "English display name is missing")
     require(bool(metadata.get("description_en", "").strip('"\'')), "English description is missing")
     require(metadata.get("icon", "").strip('"\'') == "assets/skill-icon.svg", "metadata.icon is invalid")
-    require(version == "4.2.7", "visual-prd version is not 4.2.7")
+    require(version == "4.2.8", "visual-prd version is not 4.2.8")
     publishing = ("version", "display_name", "display_name_en", "description_zh", "description_en")
     if any(key in fields for key in publishing):
         for key in publishing:
@@ -122,17 +122,18 @@ def validate_frontmatter() -> None:
 def validate_icon() -> None:
     import base64
     import xml.etree.ElementTree as ET
-    for name, size in (("skill-icon", 1024), ("brand-logo", 1254)):
+    for name, size in (("skill-icon", 1024), ("brand-logo", 960)):
         svg = ET.fromstring(read_resource(SKILL_ROOT / f"assets/{name}.svg"))
-        require(svg.get("viewBox") == f"0 0 {size} {size}", "SVG must preserve original dimensions")
+        require(svg.get("viewBox") == f"0 0 {size} {size}", "SVG dimensions must match the packaged asset")
         image = svg.find("{http://www.w3.org/2000/svg}image")
         require(image is not None, "SVG must contain original image")
+        require((image.get("width"), image.get("height")) == (str(size), str(size)), "Image must fill its SVG viewBox without clipping")
         href = image.get("href", "")
         require(href.startswith("data:image/webp;base64,"), "SVG image must be embedded and offline")
         data = base64.b64decode(href.split(",", 1)[1], validate=True)
         require(data[:4] == b"RIFF" and data[8:12] == b"WEBP" and data[12:16] == b"VP8L", "SVG must embed lossless WebP")
         dimensions = int.from_bytes(data[21:25], "little")
-        require((dimensions & 0x3fff) + 1 == size and ((dimensions >> 14) & 0x3fff) + 1 == size, "Embedded image must preserve original pixels")
+        require((dimensions & 0x3fff) + 1 == size and ((dimensions >> 14) & 0x3fff) + 1 == size, "Embedded image dimensions must match the SVG")
 
 
 

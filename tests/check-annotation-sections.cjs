@@ -38,6 +38,7 @@ async function main() {
     if (process.argv.includes('--seeded')) {
       await page.goto(url);
       await page.locator('#annotation-page-notes').getByText('点击可排序的表头切换排序。', {exact: true}).waitFor();
+      assert.equal(await page.locator('#annotation-list [data-annotation-id="create-entry"] .annotation-section-label').getByText('流转状态', {exact: true}).count(), 0);
     }
     await page.goto(url + '/legacy');
     await page.locator('[data-edit-annotation="task-overview"]').waitFor();
@@ -69,17 +70,25 @@ async function main() {
     await page.locator('[data-edit-annotation="task-overview"]').click();
     assert((await page.locator('#annotation-body').inputValue()).trim(), '旧正文保留在可编辑的交互模块');
     await page.locator('#annotation-body').fill('点击列表项查看详情');
+    for (const empty of ['  ', '本页不单独定义状态流转；所展示记录的状态按对应功能需求执行。']) {
+      await page.locator('#annotation-status').fill(empty);
+      assert.equal(await card.locator('.annotation-section-label').getByText('流转状态', {exact: true}).count(), 0);
+      assert.equal(await page.locator('#annotation-status').inputValue(), empty);
+    }
     await page.locator('#annotation-status').fill('待处理 → 已完成');
+    await card.locator('.annotation-section-label').getByText('流转状态', {exact: true}).waitFor();
     await page.locator('#annotation-fields').fill('| 区域 | 字段 |\n| --- | --- |\n| 列表字段 | 负责人 |');
     assert.equal(await page.locator('#annotation-sorting').count(), 0);
     await page.locator('#annotation-editor-close').click();
     await card.locator('table').waitFor();
-    assert.deepEqual(await card.locator('table th').allTextContents(), ['区域', '字段名称', '字段逻辑', '备注']);
-    assert.deepEqual(await card.locator('table tbody td').allTextContents(), ['列表字段', '负责人', '', '']);
+    assert.deepEqual(await card.locator('table th').allTextContents(), ['区域', '字段名称', '字段逻辑']);
+    assert.deepEqual(await card.locator('table tbody td').allTextContents(), ['列表字段', '负责人', '']);
     await page.locator('[data-edit-annotation="task-overview"]').click();
     assert.match(await page.locator('#annotation-fields').inputValue(), /\| 区域 \| 字段名称 \| 字段逻辑 \| 备注 \|/);
     await page.locator('#annotation-fields').fill('| 区域 | 字段 | 备注 |\n| --- | --- | --- |\n| 列表字段 | 负责人 | 旧备注 |');
     assert.deepEqual(await card.locator('table tbody td').allTextContents(), ['列表字段', '负责人', '', '旧备注']);
+    await page.locator('#annotation-fields').fill('| 区域 | 字段名称 | 字段逻辑 | 备注 |\n| --- | --- | --- | --- |\n| 列表字段 | 负责人 | 当前处理人 | |\n| 列表字段 | 状态 | 当前进度 | 仅管理员可改 |');
+    assert.deepEqual(await card.locator('table th').allTextContents(), ['区域', '字段名称', '字段逻辑', '备注']);
     await page.locator('#annotation-fields').fill('| 区域 | 字段名称 | 字段逻辑 | 备注 |\n| --- | --- | --- | --- |\n| 列表字段 | 负责人 | 当前处理人 | 支持筛选 |');
     await page.locator('#annotation-editor-close').click();
     await pageNotes.getByText('按更新时间倒序', {exact: true}).waitFor();

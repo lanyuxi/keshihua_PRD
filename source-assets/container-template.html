@@ -824,7 +824,7 @@
         return lines.join("\n");
       }
 
-      function renderTable(lines, startIndex) {
+      function renderTable(lines, startIndex, hideEmptyRemarks) {
         const headers = splitTableRow(lines[startIndex]);
         const rows = [];
         let cursor = startIndex + 2;
@@ -832,9 +832,12 @@
           rows.push(splitTableRow(lines[cursor]));
           cursor += 1;
         }
-        const headerHtml = headers.map(cell => `<th scope="col">${renderInline(cell)}</th>`).join("");
+        const columns = headers.map((_, index) => index);
+        const remark = hideEmptyRemarks ? headers.indexOf("备注") : -1;
+        if (remark >= 0 && rows.every(row => !row[remark])) columns.splice(remark, 1);
+        const headerHtml = columns.map(column => `<th scope="col">${renderInline(headers[column])}</th>`).join("");
         const bodyHtml = rows.map(row => {
-          const cells = headers.map((_, column) => row[column] || "");
+          const cells = columns.map(column => row[column] || "");
           return `<tr>${cells.map(cell => `<td>${renderInline(cell)}</td>`).join("")}</tr>`;
         }).join("");
         return {
@@ -864,7 +867,7 @@
 
       // Compact offline renderer for the documented PRD Markdown subset.
       const offlineMarkdown = {
-        parse(source) {
+        parse(source, { hideEmptyRemarks = false } = {}) {
           const lines = escapeHtml(normalizeTableSpacing(source)).split("\n");
           const output = [];
           let listType = "";
@@ -892,7 +895,7 @@
             if (!line.trim()) { closeList(); continue; }
             if (line.trimStart().startsWith("|") && isTableSeparator(lines[index + 1] || "")) {
               closeList();
-              const table = renderTable(lines, index);
+              const table = renderTable(lines, index, hideEmptyRemarks);
               output.push(table.html);
               index = table.nextIndex - 1;
               continue;
@@ -1224,10 +1227,17 @@
           <div class="annotation-section-body markdown-preview"${scrollable ? ` tabindex="0" aria-label="${label}"` : ""}>${content || '<p class="annotation-placeholder">待填写</p>'}</div></div>`;
       }
 
+      function hasStatusContent(value) {
+        const text = String(value ?? "").trim().replace(/[。！.!]+$/, "");
+        return Boolean(text) && !/^(?:无|暂无|不适用|本页不单独定义状态流转(?:[；;]\s*所展示记录的状态按对应功能需求执行)?)$/.test(text);
+      }
+
       function readingSections(labels, values) {
         return Object.entries(labels).map(([key, label]) => {
           const source = typeof values?.[key] === "string" ? values[key] : "";
-          return renderAnnotationSection(label, offlineMarkdown.parse(key === "fields" ? formatFieldList(source) : source), key === "fields");
+          if (key === "status" && !hasStatusContent(source)) return "";
+          const fieldList = key === "fields";
+          return renderAnnotationSection(label, offlineMarkdown.parse(fieldList ? formatFieldList(source) : source, { hideEmptyRemarks: fieldList }), fieldList);
         }).join("");
       }
 
@@ -1663,7 +1673,7 @@
       }
 
       function runtimeAnnotation(item) {
-        const extra = Object.entries(ANNOTATION_SECTION_LABELS).filter(([key]) => item.sections?.[key]?.trim())
+        const extra = Object.entries(ANNOTATION_SECTION_LABELS).filter(([key]) => key === "status" ? hasStatusContent(item.sections?.status) : item.sections?.[key]?.trim())
           .map(([key, label]) => label + "：" + (key === "fields" ? formatFieldList(item.sections[key]) : item.sections[key]));
         return { ...item, body: [item.body, ...extra].filter(Boolean).join("\n\n"),
           scope: { type: item.scope, id: item.scopeId } };

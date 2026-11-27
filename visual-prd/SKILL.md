@@ -2,7 +2,7 @@
 name: visual-prd
 description: 将现有或新生成的 PRD、交互原型与业务标注装配为同屏离线评审页；已有 HTML 尚无标注时，先建立可核对的标注数据和页面锚点。支持原型任意点位手工添加标注、原型文案编辑、逐条标注编辑/删除与图片粘贴、授权后自动写回 HTML、Mermaid 流程图离线预览和无标注交互页面导出。适用于需求评审、原型标注或已有 HTML 增强；不用于只写普通 PRD 或交付最终高保真视觉稿。
 metadata:
-  version: "4.2.7"
+  version: "4.2.8"
   author: '公众号“AI 翻车现场”的智障研究员'
   display_name_zh: "可视化 PRD"
   display_name_en: "Visual PRD"
