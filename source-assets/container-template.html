@@ -109,7 +109,6 @@
       padding: 10px 14px;
       border-bottom: 1px solid var(--line);
     }
-    .eyebrow { margin: 0 0 2px; color: var(--muted); font-size: 10px; font-weight: 750; letter-spacing: .09em; text-transform: uppercase; }
     .panel-title { margin: 0; font-size: 14px; font-weight: 760; }
     .panel-scroll { min-height: 0; overflow: auto; overscroll-behavior: contain; }
 
@@ -291,11 +290,6 @@
     .annotation-rules { margin-top: 8px; color: #50586b; font-size: 11px; line-height: 1.5; }
     .annotation-rules strong { color: var(--ink); }
     .annotation-rules ul { margin: 4px 0 0; padding-left: 17px; }
-    .annotation-card footer { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 9px; }
-    .tag { padding: 3px 6px; border-radius: 5px; color: #596174; background: #f0f2f5; font-size: 9px; }
-    .tag.scope-page { color: #175cd3; background: #eff8ff; }
-    .tag.scope-tab { color: #6941c6; background: #f4f3ff; }
-    .tag.scope-modal { color: #b54708; background: #fff4ed; }
     .empty-state { padding: 38px 20px; color: var(--muted); text-align: center; font-size: 12px; }
 
     .floating-mode .workspace { grid-template-columns: minmax(0, 1fr); }
@@ -508,10 +502,7 @@
       <aside class="panel right-panel" aria-label="当前页面标注">
         <div class="panel-inner">
           <header class="panel-header">
-            <div>
-              <p class="eyebrow">Annotations</p>
-              <h2 class="panel-title">当前页面标注</h2>
-            </div>
+            <h2 class="panel-title">当前页面标注</h2>
             <div class="annotation-header-actions"><button id="add-annotation" class="button button-quiet" type="button" aria-pressed="false">添加标注</button><span id="annotation-count" class="scope-chip">0 项</span></div>
           </header>
           <div class="panel-scroll">
@@ -587,13 +578,13 @@
       <label>交互（可直接粘贴图片，支持 Markdown）<textarea id="annotation-body" rows="5"></textarea></label>
       <label>流转状态<textarea id="annotation-status" rows="2"></textarea></label>
       <label>字段列表（支持 Markdown 表格）<textarea id="annotation-fields" rows="3"></textarea></label>
-      <label>数据排序<textarea id="annotation-sorting" rows="2"></textarea></label>
       <label>业务规则（每行一条）<textarea id="annotation-rules" rows="3"></textarea></label>
     </div>
     <div id="annotation-page-fields" hidden>
       <label>页面概述<textarea id="annotation-page-overview" rows="3"></textarea></label>
       <label>解决问题<textarea id="annotation-page-problem" rows="3"></textarea></label>
       <label>权限说明（支持 Markdown 表格）<textarea id="annotation-page-permissions" rows="4"></textarea></label>
+      <label>数据排序<textarea id="annotation-page-sorting" rows="3"></textarea></label>
     </div>
     <p class="doc-context">修改立即保存。首次点击“授权自动写回”选择正在编辑的已有 HTML；显示“已自动写回”后可关闭。</p>
     <div id="annotation-editor-preview" class="markdown-preview"></div>
@@ -727,8 +718,8 @@
       ];
 
       const SCOPE_LABEL = { page: "页面", tab: "标签页", drawer: "抽屉", modal: "弹层" };
-      const PAGE_NOTE_LABELS = { overview: "页面概述", problem: "解决问题", permissions: "权限说明" };
-      const ANNOTATION_SECTION_LABELS = { status: "流转状态", fields: "字段列表", sorting: "数据排序" };
+      const PAGE_NOTE_LABELS = { overview: "页面概述", problem: "解决问题", permissions: "权限说明", sorting: "数据排序" };
+      const ANNOTATION_SECTION_LABELS = { status: "流转状态", fields: "字段列表" };
       const FIELD_HEADERS = ["区域", "字段名称", "字段逻辑", "备注"];
       const FIELD_TEMPLATE = "| " + FIELD_HEADERS.join(" | ") + " |\n| --- | --- | --- | --- |\n|  |  |  |  |";
       const state = {
@@ -1082,6 +1073,7 @@
           $("#disk-save").textContent = "更换写回文件";
           $("#save-state").textContent = "已恢复自动写回：" + fileHandle.name;
         }
+        return saved;
       }
 
       function persistState() {
@@ -1239,13 +1231,37 @@
         }).join("");
       }
 
+      function ownPageNotes(pageId) {
+        return Object.hasOwn(state.pageNotes, pageId) ? state.pageNotes[pageId] : {};
+      }
+
+      function pageNotesFor(pageId) {
+        return { sorting: state.pageNotes["*"]?.sorting, ...ownPageNotes(pageId) };
+      }
+
+      function migrateAnnotationSorting(preferredNotes = state.pageNotes) {
+        const byPage = new Map();
+        for (const annotation of state.annotations) {
+          const text = annotation.sections?.sorting;
+          if (annotation.deleted || typeof text !== "string" || !text.trim()) continue;
+          if (!byPage.has(annotation.pageId)) byPage.set(annotation.pageId, []);
+          byPage.get(annotation.pageId).push(text.trim());
+        }
+        const shared = byPage.get("*") || [];
+        for (const [pageId, sorting] of byPage) {
+          // An explicitly saved empty value also overrides legacy content.
+          if (typeof preferredNotes?.[pageId]?.sorting === "string") continue;
+          const rules = new Set([...shared, ...sorting]);
+          state.pageNotes = { ...state.pageNotes, [pageId]: { ...ownPageNotes(pageId), sorting: [...rules].join("\n\n") } };
+        }
+      }
+
       function renderAnnotations() {
         const annotations = visibleAnnotations();
         $("#annotation-count").textContent = `${annotations.length} 项`;
         const context = annotationLocation({pageId: state.pageId, scope: state.modalId ? "modal" : state.tabId ? "tab" : "page", scopeId: state.modalId || state.tabId});
         $("#annotation-summary").textContent = context;
-        const notes = Object.hasOwn(state.pageNotes, state.pageId) ? state.pageNotes[state.pageId] : null;
-        const nextPageNotes = readingSections(PAGE_NOTE_LABELS, notes);
+        const nextPageNotes = readingSections(PAGE_NOTE_LABELS, pageNotesFor(state.pageId));
         if (nextPageNotes !== renderedPageNotes) {
           $("#annotation-page-notes").innerHTML = nextPageNotes;
           renderedPageNotes = nextPageNotes;
@@ -1264,10 +1280,6 @@
                   <div class="annotation-heading"><h3>${escapeHtml(annotation.title)}</h3><span class="annotation-actions"><button class="annotation-edit" type="button" data-edit-annotation="${annotation.id}" aria-label="编辑标注 ${number}">编辑</button><button class="annotation-delete" type="button" data-delete-annotation="${annotation.id}" aria-label="删除标注 ${number}">删除</button></span></div>
                   ${readingSections({body: "交互", ...ANNOTATION_SECTION_LABELS}, {body: annotation.body, ...annotation.sections})}
                   <div class="annotation-rules">${(annotation.businessRules || []).map(rule => `<p>${escapeHtml(rule)}</p>`).join("")}</div>
-                  <footer>
-                    <span class="tag scope-${annotation.scope}">${SCOPE_LABEL[annotation.scope] || annotation.scope}</span>
-                    <span class="tag">${escapeHtml(annotationLocation(annotation))}</span>
-                  </footer>
                 </div>
               </article>
             `;
@@ -1666,7 +1678,7 @@
       function editPageNotes() {
         editingAnnotationId = "";
         editingPageNotesId = state.pageId;
-        const notes = Object.hasOwn(state.pageNotes, editingPageNotesId) ? state.pageNotes[editingPageNotesId] : {};
+        const notes = pageNotesFor(editingPageNotesId);
         for (const key of Object.keys(PAGE_NOTE_LABELS)) $("#annotation-page-" + key).value = notes[key] || "";
         $("#annotation-editor-heading").textContent = "编辑页面说明 · " + state.pageLabel;
         $("#annotation-item-fields").hidden = true;
@@ -1947,7 +1959,7 @@
         $("#edit-annotation-page").addEventListener("click", editPageNotes);
         for (const key of Object.keys(PAGE_NOTE_LABELS)) {
           $("#annotation-page-" + key).addEventListener("input", event => {
-            const notes = Object.hasOwn(state.pageNotes, editingPageNotesId) ? state.pageNotes[editingPageNotesId] : {};
+            const notes = ownPageNotes(editingPageNotesId);
             state.pageNotes = { ...state.pageNotes, [editingPageNotesId]: { ...notes, [key]: event.target.value } };
             renderAnnotations();
             persistState();
@@ -2132,7 +2144,8 @@
         }
         const injectedPageNotes = decodeBase64(PAGE_NOTES_PAYLOAD);
         if (injectedPageNotes) state.pageNotes = JSON.parse(injectedPageNotes);
-        await loadPersistedState();
+        const saved = await loadPersistedState();
+        migrateAnnotationSorting(Array.isArray(saved?.annotations) ? saved.pageNotes || {} : state.pageNotes);
         const injectedProfile = decodeBase64(UI_PROFILE_PAYLOAD);
         if (injectedProfile) {
           try {
@@ -2170,6 +2183,7 @@
         setAnnotations(annotations) {
           if (!Array.isArray(annotations)) throw new TypeError("annotations must be an array");
           state.annotations = annotations;
+          migrateAnnotationSorting();
           syncAnnotationDefinitions();
           syncPrototypeContext();
           persistState();

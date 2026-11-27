@@ -19,7 +19,7 @@ SKILL_ROOT = Path(__file__).resolve().parent.parent
 ANNOTATION_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]*$")
 VALID_SCOPES = {"page", "tab", "drawer", "modal"}
 ANNOTATION_SECTIONS = {"status", "fields", "sorting"}
-PAGE_NOTE_SECTIONS = {"overview", "problem", "permissions"}
+PAGE_NOTE_SECTIONS = {"overview", "problem", "permissions", "sorting"}
 
 
 def encode_payload(value: str) -> str:

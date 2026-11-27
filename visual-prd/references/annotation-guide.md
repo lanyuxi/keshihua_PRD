@@ -83,9 +83,9 @@
 
 ## 标注数据 JSON Schema
 
-三种模式可用 `inputs.page_notes` 预填页面概述、解决问题和权限说明。文件示例 `{"list":{"overview":"任务列表","problem":"便于查找任务","permissions":"待确认"}}`，其中 `list` 为页面 ID。
+三种模式可用 `inputs.page_notes` 预填页面概述、解决问题、权限说明和数据排序。文件示例 `{"list":{"overview":"任务列表","problem":"便于查找任务","permissions":"待确认","sorting":"按更新时间倒序"}}`，其中 `list` 为页面 ID。
 
-数字标注沿用 `body`（交互）。可在标注或生成模式的 `annotation` 中加入 `sections`，填写 `status`（流转状态）、`fields`（字段列表）、`sorting`（数据排序）。支持 Markdown 表格，未知留空。右栏编辑随评审 HTML 保存。
+数字标注沿用 `body`（交互）。可在标注或生成模式的 `annotation` 中加入 `sections`，填写 `status`（流转状态）、`fields`（字段列表）。旧版的 `sections.sorting` 仍可读取，同页规则汇总到页面说明，已填写或主动清空的页面排序优先。右栏编辑随评审 HTML 保存。
 
 字段列表使用四列 `| 区域 | 字段名称 | 字段逻辑 | 备注 |`，区域可填筛选器、列表字段或表单字段。字段逻辑描述展示、校验或操作规则，未知留空。
 
@@ -129,7 +129,7 @@
     "sections": {
       "type": "object",
       "additionalProperties": false,
-      "properties": {"status": {"type": "string"}, "fields": {"type": "string"}, "sorting": {"type": "string"}}
+      "properties": {"status": {"type": "string"}, "fields": {"type": "string"}, "sorting": {"type": "string", "deprecated": true}}
     },
     "scope": {
       "type": "object",
