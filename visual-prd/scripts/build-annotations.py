@@ -31,6 +31,7 @@ def compile_annotations(model: dict) -> list[dict]:
             "pageId": str(page_id),
             "title": str(title),
             "body": str(body),
+            **({"sections": annotation["sections"]} if "sections" in annotation else {}),
             "businessRules": rules,
             "scope": {"type": scope["type"], "id": scope["id"]},
         })

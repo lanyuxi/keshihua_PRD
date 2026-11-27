@@ -83,6 +83,10 @@
 
 ## 标注数据 JSON Schema
 
+三种模式可用 `inputs.page_notes` 预填页面概述、解决问题和权限说明。文件示例 `{"list":{"overview":"任务列表","problem":"便于查找任务","permissions":"待确认"}}`，其中 `list` 为页面 ID。
+
+数字标注沿用 `body`（交互）。可在标注或生成模式的 `annotation` 中加入 `sections`，填写 `status`（流转状态）、`fields`（字段列表）、`sorting`（数据排序）。支持 Markdown 表格，未知留空。右栏编辑随评审 HTML 保存。
+
 初始化和增量更新都使用以下标注对象：
 
 ```json
@@ -119,6 +123,11 @@
         { "type": "string" },
         { "type": "array", "items": { "type": "string" } }
       ]
+    },
+    "sections": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {"status": {"type": "string"}, "fields": {"type": "string"}, "sorting": {"type": "string"}}
     },
     "scope": {
       "type": "object",

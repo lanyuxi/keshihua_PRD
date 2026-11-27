@@ -28,6 +28,7 @@ def main() -> None:
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--ui-profile", type=Path, help="可选界面规范 JSON")
     parser.add_argument("--flows", type=Path, help="流程图 Markdown，包含 Mermaid 源码及文字说明")
+    parser.add_argument("--page-notes", type=Path, help="依页面 ID 编排的页面说明 JSON")
     args = parser.parse_args()
     output = args.output_dir.resolve()
     output.mkdir(parents=True, exist_ok=True)
@@ -70,6 +71,8 @@ def main() -> None:
         ]
         if args.ui_profile:
             container_command.extend(["--ui-profile", str(args.ui_profile)])
+        if args.page_notes:
+            container_command.extend(["--page-notes", str(args.page_notes)])
         if args.flows:
             if args.flows.resolve() != files["flows"].resolve():
                 shutil.copy2(args.flows, files["flows"])

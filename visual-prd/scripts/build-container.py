@@ -18,6 +18,8 @@ from resource_io import read_resource
 SKILL_ROOT = Path(__file__).resolve().parent.parent
 ANNOTATION_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]*$")
 VALID_SCOPES = {"page", "tab", "drawer", "modal"}
+ANNOTATION_SECTIONS = {"status", "fields", "sorting"}
+PAGE_NOTE_SECTIONS = {"overview", "problem", "permissions"}
 
 
 def encode_payload(value: str) -> str:
@@ -52,6 +54,24 @@ def load_annotations(path: Path | None) -> list[dict]:
     return value
 
 
+def validate_sections(value: object, keys: set[str], label: str) -> None:
+    if not isinstance(value, dict) or value.keys() - keys or not all(isinstance(text, str) for text in value.values()):
+        raise ValueError(f"{label} must map supported section names to Markdown strings")
+
+
+def load_page_notes(path: Path | None) -> dict:
+    if path is None:
+        return {}
+    notes = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(notes, dict):
+        raise ValueError("Page notes must be an object keyed by page ID")
+    for page_id, sections in notes.items():
+        if not page_id.strip() or page_id == "*":
+            raise ValueError("Page notes require a concrete page ID")
+        validate_sections(sections, PAGE_NOTE_SECTIONS, f"Page notes for {page_id}")
+    return notes
+
+
 def validate_annotations(annotations: list[dict]) -> None:
     seen_ids: set[str] = set()
     for annotation in annotations:
@@ -83,6 +103,8 @@ def validate_annotations(annotations: list[dict]) -> None:
             raise ValueError(f'Annotation "{annotation_id}" requires a non-empty title')
         if not isinstance(annotation.get("body"), str):
             raise ValueError(f'Annotation "{annotation_id}" body must be a string')
+        if "sections" in annotation:
+            validate_sections(annotation["sections"], ANNOTATION_SECTIONS, f"Annotation {annotation_id} sections")
         rules = annotation.get("businessRules")
         if not isinstance(rules, (str, list)) or (
             isinstance(rules, list) and not all(isinstance(rule, str) for rule in rules)
@@ -227,6 +249,7 @@ def container_annotations(annotations: list[dict]) -> list[dict]:
                 "pageId": str(annotation.get("pageId", "*")),
                 "title": str(annotation.get("title", "未命名标注")),
                 "body": str(annotation.get("body", "")),
+                **({"sections": annotation["sections"]} if "sections" in annotation else {}),
                 "businessRules": rules,
                 "selector": f'[data-anno="{escaped_id}"]',
                 "scope": str(scope.get("type", "page")),
@@ -282,6 +305,7 @@ def build(
     handoff_path: Path | None = None,
     ui_profile_path: Path | None = None,
     flows_path: Path | None = None,
+    page_notes_path: Path | None = None,
 ) -> None:
     template = strip_demo_fallbacks(
         read_resource(SKILL_ROOT / "assets/container-template.html").decode("utf-8")
@@ -294,6 +318,7 @@ def build(
     prd_markdown = prd_path.read_text(encoding="utf-8")
     flows_markdown = flows_path.read_text(encoding="utf-8") if flows_path else ""
     annotations = load_annotations(annotations_path)
+    page_notes = load_page_notes(page_notes_path)
     ui_profile = load_ui_profile(ui_profile_path) if ui_profile_path else None
     validate_prototype_source(prototype_source, annotations)
     if handoff_path is not None:
@@ -354,6 +379,7 @@ def build(
     )
     page = page.replace("__VISUAL_PRD_DEVELOPER_BASE64__", encode_payload(developer_source(prototype_source)), 1)
     page = page.replace("__VISUAL_PRD_FLOWS_BASE64__", encode_payload(flows_markdown), 1)
+    page = page.replace("__VISUAL_PRD_PAGE_NOTES_BASE64__", encode_payload(json.dumps(page_notes, ensure_ascii=False)), 1)
     logo = base64.b64encode(read_resource(SKILL_ROOT / "assets/brand-logo.svg")).decode("ascii")
     page = page.replace('src="brand-logo.svg"', f'src="data:image/svg+xml;base64,{logo}"', 1)
     unresolved = [
@@ -366,6 +392,7 @@ def build(
             "/*__MERMAID_RUNTIME__*/",
             'const DEVELOPER_PAYLOAD = "__VISUAL_PRD_DEVELOPER_BASE64__"',
             'const FLOWS_PAYLOAD = "__VISUAL_PRD_FLOWS_BASE64__"',
+            'const PAGE_NOTES_PAYLOAD = "__VISUAL_PRD_PAGE_NOTES_BASE64__"',
         ) if marker in page
     ]
     if unresolved:
@@ -380,6 +407,7 @@ def main() -> None:
     parser.add_argument("--prd", type=Path, required=True, help="PRD Markdown file")
     parser.add_argument("--annotations", type=Path, required=True, help="Annotation JSON file")
     parser.add_argument("--flows", type=Path, help="Flow diagrams Markdown with editable Mermaid code blocks")
+    parser.add_argument("--page-notes", type=Path, help="Page annotations as a JSON object keyed by page ID")
     parser.add_argument("--runtime", type=Path, help="Annotation runtime JavaScript")
     parser.add_argument("--handoff", type=Path, help="Optional requirement handoff JSON to validate against prototype and annotations")
     parser.add_argument("--ui-profile", type=Path, help="Optional UI profile exposed through the offline configurator")
@@ -397,6 +425,7 @@ def main() -> None:
             handoff_path=args.handoff,
             ui_profile_path=args.ui_profile,
             flows_path=args.flows,
+            page_notes_path=args.page_notes,
         )
     except (OSError, ValueError, json.JSONDecodeError) as error:
         parser.error(str(error))

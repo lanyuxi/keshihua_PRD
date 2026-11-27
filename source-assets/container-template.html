@@ -258,6 +258,17 @@
 
     .annotation-summary { padding: 11px 13px; border-bottom: 1px solid var(--line); color: var(--muted); background: #fafbfc; font-size: 11px; }
     .annotation-list { display: grid; gap: 10px; padding: 12px 12px 70px; }
+    .annotation-page { margin: 12px 12px 0; padding: 11px; background: #fff; border: 1px solid var(--line); border-radius: 10px; }
+    .annotation-page-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; font-size: 12px; }
+    .annotation-section { display: grid; grid-template-columns: 5.1em minmax(0, 1fr); align-items: start; gap: 7px; margin-top: 6px; font-size: 11px; overflow-wrap: anywhere; }
+    .annotation-section-label { border-radius: 4px; padding: 3px 4px; background: #eef2f7; color: var(--ink); text-align: center; }
+    .annotation-section-body { min-width: 0; overflow-x: auto; }
+    .annotation-section-body:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+    .annotation-section-body > :first-child { margin-top: 0; }
+    .annotation-section-body > :last-child { margin-bottom: 0; }
+    .annotation-section-body .annotation-placeholder { color: var(--muted); }
+    .annotation-section-body table { font-size: inherit; }
+    .annotation-card.is-active { background: #fff7da; }
     .annotation-card {
       display: grid;
       grid-template-columns: 28px minmax(0, 1fr);
@@ -501,6 +512,10 @@
           </header>
           <div class="panel-scroll">
             <div id="annotation-summary" class="annotation-summary">正在读取原型上下文…</div>
+            <section class="annotation-page" aria-label="页面说明">
+              <div class="annotation-page-head"><strong>页面说明</strong><button id="edit-annotation-page" class="annotation-edit" type="button" aria-label="编辑页面说明">编辑</button></div>
+              <div id="annotation-page-notes"></div>
+            </section>
             <div id="annotation-list" class="annotation-list"></div>
           </div>
         </div>
@@ -563,9 +578,19 @@
   <script>/*__UI_CONFIGURATOR_RUNTIME__*/</script>
   <dialog id="annotation-editor-dialog" aria-labelledby="annotation-editor-heading">
     <div class="annotation-dialog-heading"><h2 id="annotation-editor-heading">编辑标注</h2><button id="annotation-editor-dismiss" class="annotation-dialog-x" type="button" aria-label="关闭标注编辑弹窗">×</button></div>
-    <label>标题<input id="annotation-title" type="text"></label>
-    <label>内容（可直接粘贴图片，支持轻量排版）<textarea id="annotation-body" rows="8"></textarea></label>
-    <label>业务规则（每行一条）<textarea id="annotation-rules" rows="3"></textarea></label>
+    <div id="annotation-item-fields">
+      <label>标题<input id="annotation-title" type="text"></label>
+      <label>交互（可直接粘贴图片，支持 Markdown）<textarea id="annotation-body" rows="5"></textarea></label>
+      <label>流转状态<textarea id="annotation-status" rows="2"></textarea></label>
+      <label>字段列表（支持 Markdown 表格）<textarea id="annotation-fields" rows="3"></textarea></label>
+      <label>数据排序<textarea id="annotation-sorting" rows="2"></textarea></label>
+      <label>业务规则（每行一条）<textarea id="annotation-rules" rows="3"></textarea></label>
+    </div>
+    <div id="annotation-page-fields" hidden>
+      <label>页面概述<textarea id="annotation-page-overview" rows="3"></textarea></label>
+      <label>解决问题<textarea id="annotation-page-problem" rows="3"></textarea></label>
+      <label>权限说明（支持 Markdown 表格）<textarea id="annotation-page-permissions" rows="4"></textarea></label>
+    </div>
     <p class="doc-context">修改立即保存。首次点击“授权自动写回”选择正在编辑的已有 HTML；显示“已自动写回”后可关闭。</p>
     <div id="annotation-editor-preview" class="markdown-preview"></div>
     <div class="annotation-editor-actions"><button id="annotation-editor-cancel" class="button" type="button">取消</button><button id="annotation-editor-close" class="button" type="button">确定</button></div>
@@ -600,6 +625,7 @@
       const PROTOTYPE_PAYLOAD = "__VISUAL_PRD_PROTOTYPE_BASE64__";
       const PRD_PAYLOAD = "__VISUAL_PRD_PRD_MARKDOWN_BASE64__";
       const ANNOTATIONS_PAYLOAD = "__VISUAL_PRD_ANNOTATIONS_BASE64__";
+      const PAGE_NOTES_PAYLOAD = "__VISUAL_PRD_PAGE_NOTES_BASE64__";
       const UI_PROFILE_PAYLOAD = "__VISUAL_PRD_UI_PROFILE_BASE64__";
       const DEVELOPER_PAYLOAD = "__VISUAL_PRD_DEVELOPER_BASE64__";
       const FLOWS_PAYLOAD = "__VISUAL_PRD_FLOWS_BASE64__";
@@ -697,12 +723,15 @@
       ];
 
       const SCOPE_LABEL = { page: "页面", tab: "标签页", drawer: "抽屉", modal: "弹层" };
+      const PAGE_NOTE_LABELS = { overview: "页面概述", problem: "解决问题", permissions: "权限说明" };
+      const ANNOTATION_SECTION_LABELS = { status: "流转状态", fields: "字段列表", sorting: "数据排序" };
       const state = {
         mode: "review",
         activeDoc: "architecture",
         docMode: "preview",
         docs: { ...DEFAULT_DOCS },
         annotations: [...DEFAULT_ANNOTATIONS],
+        pageNotes: {},
         pageId: "home",
         pageLabel: "首页",
         tabId: "overview",
@@ -726,6 +755,9 @@
       const editor = $("#markdown-editor");
       const preview = $("#markdown-preview");
       let editingAnnotationId = "";
+      let editingPageNotesId = "";
+      let renderedAnnotationList = "";
+      let renderedPageNotes = "";
       let deletingAnnotationId = "";
       let fileHandle = null;
       let revision = 0;
@@ -932,6 +964,7 @@
 
       function reviewSnapshot() {
         return { docs: state.docs, annotations: state.annotations, activeDoc: state.activeDoc,
+          pageNotes: state.pageNotes,
           mode: state.mode, leftWidth: state.leftWidth, rightWidth: state.rightWidth,
           productHidden: state.productHidden, annotationsHidden: state.annotationsHidden,
           prototypeEdits: state.prototypeEdits, uiProfile: uiConfigurator?.getProfile() || state.uiProfile, savedAt: state.savedAt };
@@ -954,7 +987,7 @@
         root.querySelector("#add-annotation").setAttribute("aria-pressed", "false");
         root.querySelector("#edit-prototype").textContent = "编辑";
         root.querySelector("#edit-prototype").setAttribute("aria-pressed", "false");
-        root.querySelector("#markdown-preview").replaceChildren();
+        root.querySelectorAll("#markdown-preview, #annotation-page-notes, #annotation-list").forEach(node => node.replaceChildren());
         root.querySelectorAll("[data-mermaid-render-host]").forEach(host => host.remove());
         return "<!doctype html>\n" + root.outerHTML;
       }
@@ -999,6 +1032,9 @@
         if (saved) {
           state.docs = { ...state.docs, ...saved.docs };
           if (Array.isArray(saved.annotations)) state.annotations = saved.annotations;
+          if (saved.pageNotes && !Array.isArray(saved.pageNotes) && typeof saved.pageNotes === "object") {
+            state.pageNotes = { ...state.pageNotes, ...saved.pageNotes };
+          }
           if (Array.isArray(saved.prototypeEdits)) state.prototypeEdits = saved.prototypeEdits;
           if (saved.activeDoc && state.docs[saved.activeDoc]) state.activeDoc = saved.activeDoc;
           if (["review", "floating"].includes(saved.mode)) state.mode = saved.mode;
@@ -1159,17 +1195,34 @@
         return state.annotations.find(item => item.id === id);
       }
 
+      function renderAnnotationSection(label, content, scrollable = false) {
+        return `<div class="annotation-section"><strong class="annotation-section-label">${label}</strong>
+          <div class="annotation-section-body markdown-preview"${scrollable ? ` tabindex="0" aria-label="${label}"` : ""}>${content || '<p class="annotation-placeholder">待填写</p>'}</div></div>`;
+      }
+
+      function readingSections(labels, values) {
+        return Object.entries(labels).map(([key, label]) => {
+          const content = offlineMarkdown.parse(typeof values?.[key] === "string" ? values[key] : "");
+          return renderAnnotationSection(label, content, content.includes("<table"));
+        }).join("");
+      }
+
       function renderAnnotations() {
         const annotations = visibleAnnotations();
         $("#annotation-count").textContent = `${annotations.length} 项`;
         const context = annotationLocation({pageId: state.pageId, scope: state.modalId ? "modal" : state.tabId ? "tab" : "page", scopeId: state.modalId || state.tabId});
         $("#annotation-summary").textContent = context;
+        const notes = Object.hasOwn(state.pageNotes, state.pageId) ? state.pageNotes[state.pageId] : null;
+        const nextPageNotes = readingSections(PAGE_NOTE_LABELS, notes);
+        if (nextPageNotes !== renderedPageNotes) {
+          $("#annotation-page-notes").innerHTML = nextPageNotes;
+          renderedPageNotes = nextPageNotes;
+        }
 
         const list = $("#annotation-list");
-        if (!annotations.length) {
-          list.innerHTML = '<div class="empty-state">当前上下文没有标注。<br>切换页面、Tab 或打开弹层后再查看。</div>';
-        } else {
-          list.innerHTML = annotations.map(annotation => {
+        const nextList = !annotations.length
+          ? '<div class="empty-state">当前上下文没有标注。<br>切换页面、Tab 或打开弹层后再查看。</div>'
+          : annotations.map(annotation => {
             const number = annotationNumber(annotation);
             assertAnnotationNumberMatch(annotation, number);
             return `
@@ -1177,7 +1230,7 @@
                 <div class="annotation-number">${number}</div>
                 <div>
                   <div class="annotation-heading"><h3>${escapeHtml(annotation.title)}</h3><span class="annotation-actions"><button class="annotation-edit" type="button" data-edit-annotation="${annotation.id}" aria-label="编辑标注 ${number}">编辑</button><button class="annotation-delete" type="button" data-delete-annotation="${annotation.id}" aria-label="删除标注 ${number}">删除</button></span></div>
-                  <div class="annotation-content markdown-preview">${offlineMarkdown.parse(annotation.body)}</div>
+                  ${readingSections({body: "交互", ...ANNOTATION_SECTION_LABELS}, {body: annotation.body, ...annotation.sections})}
                   <div class="annotation-rules">${(annotation.businessRules || []).map(rule => `<p>${escapeHtml(rule)}</p>`).join("")}</div>
                   <footer>
                     <span class="tag scope-${annotation.scope}">${SCOPE_LABEL[annotation.scope] || annotation.scope}</span>
@@ -1187,6 +1240,9 @@
               </article>
             `;
           }).join("");
+        if (nextList !== renderedAnnotationList) {
+          list.innerHTML = nextList;
+          renderedAnnotationList = nextList;
         }
         renderDots();
       }
@@ -1269,7 +1325,7 @@
             <h3 class="popover-title"><span class="popover-index">${annotationNumber(annotation)}</span>${escapeHtml(annotation.title)}</h3>
             <button class="popover-close" type="button" aria-label="关闭标注">×</button>
           </div>
-          <p class="popover-body">${escapeHtml(annotation.body)}</p>
+          ${readingSections({body: "交互", ...ANNOTATION_SECTION_LABELS}, {body: annotation.body, ...annotation.sections})}
           ${annotation.businessRules?.length ? `<div class="annotation-rules"><strong>业务规则</strong><ul>${annotation.businessRules.map(rule => `<li>${escapeHtml(rule)}</li>`).join("")}</ul></div>` : ""}
           <div class="popover-meta">${escapeHtml(annotationLocation(annotation))}</div>
         `;
@@ -1371,16 +1427,7 @@
         prototypeTextEditor?.setEnabled(prototypeEditing);
         const runtime = prototypeRuntime();
         runtime?.init({
-          annotations: state.annotations.filter(item => !item.position).map(annotation => ({
-            id: annotation.id,
-            order: annotation.order,
-            pageId: annotation.pageId,
-            title: annotation.title,
-            body: annotation.body,
-            businessRules: annotation.businessRules || [],
-            deleted: Boolean(annotation.deleted),
-            scope: { type: annotation.scope, id: annotation.scopeId },
-          })),
+          annotations: state.annotations.filter(item => !item.position).map(runtimeAnnotation),
           pageId: () => doc.body.dataset.annoPage || doc.body.dataset.vprdPage || state.pageId,
         });
 
@@ -1426,7 +1473,13 @@
           syncPrototypeContext(); requestAnnotationPosition();
         }).observe(doc.body, {subtree: true, childList: true, attributes: true, attributeFilter: ["hidden", "class", "style", "aria-hidden"]});
         doc.addEventListener("scroll", requestAnnotationPosition, true);
-        doc.addEventListener("annotation-runtime:updated", syncPrototypeContext);
+        doc.addEventListener("annotation-runtime:updated", event => {
+          if (popover.hidden && event.detail.activeId !== state.activeAnnotationId) {
+            state.activeAnnotationId = event.detail.activeId;
+            syncPrototypeContext();
+            revealAnnotationCard(event.detail.activeId);
+          } else syncPrototypeContext();
+        });
         frame.contentWindow.addEventListener("resize", requestAnnotationPosition);
         try {
           if ("ResizeObserver" in frame.contentWindow) new frame.contentWindow.ResizeObserver(requestAnnotationPosition).observe(doc.body);
@@ -1562,17 +1615,46 @@
       }
 
       function syncAnnotationDefinitions() {
-        prototypeRuntime()?.update({ upsert: state.annotations.filter(item => !item.position).map(item => ({ ...item,
-          scope: { type: item.scope, id: item.scopeId } })) });
+        prototypeRuntime()?.update({ upsert: state.annotations.filter(item => !item.position).map(runtimeAnnotation) });
+      }
+
+      function runtimeAnnotation(item) {
+        const extra = Object.entries(ANNOTATION_SECTION_LABELS).filter(([key]) => item.sections?.[key]?.trim())
+          .map(([key, label]) => label + "：" + item.sections[key]);
+        return { ...item, body: [item.body, ...extra].filter(Boolean).join("\n\n"),
+          scope: { type: item.scope, id: item.scopeId } };
+      }
+
+      function revealAnnotationCard(id) {
+        if (id && state.mode === "review" && !state.annotationsHidden) {
+          $(`#annotation-list [data-annotation-id="${CSS.escape(id)}"]`)?.scrollIntoView({block: "nearest"});
+        }
+      }
+
+      function editPageNotes() {
+        editingAnnotationId = "";
+        editingPageNotesId = state.pageId;
+        const notes = Object.hasOwn(state.pageNotes, editingPageNotesId) ? state.pageNotes[editingPageNotesId] : {};
+        for (const key of Object.keys(PAGE_NOTE_LABELS)) $("#annotation-page-" + key).value = notes[key] || "";
+        $("#annotation-editor-heading").textContent = "编辑页面说明 · " + state.pageLabel;
+        $("#annotation-item-fields").hidden = true;
+        $("#annotation-page-fields").hidden = false;
+        $("#annotation-editor-preview").innerHTML = "";
+        $("#annotation-editor-dialog").showModal();
+        $("#annotation-page-overview").focus();
       }
 
       function editAnnotation(id, creating = false) {
         const annotation = annotationById(id);
         if (!annotation) return;
+        editingPageNotesId = "";
         editingAnnotationId = id;
+        $("#annotation-item-fields").hidden = false;
+        $("#annotation-page-fields").hidden = true;
         $("#annotation-editor-heading").textContent = creating ? "添加标注" : "编辑标注";
         $("#annotation-title").value = annotation.title;
         $("#annotation-body").value = annotation.body;
+        for (const key of Object.keys(ANNOTATION_SECTION_LABELS)) $("#annotation-" + key).value = annotation.sections?.[key] || "";
         $("#annotation-rules").value = (annotation.businessRules || []).join("\n");
         $("#annotation-editor-preview").innerHTML = offlineMarkdown.parse(annotation.body);
         $("#annotation-editor-dialog").showModal();
@@ -1584,6 +1666,7 @@
         if (!annotation) return;
         annotation.title = $("#annotation-title").value;
         annotation.body = $("#annotation-body").value;
+        annotation.sections = Object.fromEntries(Object.keys(ANNOTATION_SECTION_LABELS).map(key => [key, $("#annotation-" + key).value]));
         annotation.businessRules = $("#annotation-rules").value.split("\n").filter(line => line.trim());
         $("#annotation-editor-preview").innerHTML = offlineMarkdown.parse(annotation.body);
         syncAnnotationDefinitions();
@@ -1826,12 +1909,22 @@
         for (const id of ["annotation-editor-dismiss", "annotation-editor-cancel"]) {
           $("#" + id).addEventListener("click", () => $("#annotation-editor-dialog").close());
         }
+        $("#edit-annotation-page").addEventListener("click", editPageNotes);
+        for (const key of Object.keys(PAGE_NOTE_LABELS)) {
+          $("#annotation-page-" + key).addEventListener("input", event => {
+            const notes = Object.hasOwn(state.pageNotes, editingPageNotesId) ? state.pageNotes[editingPageNotesId] : {};
+            state.pageNotes = { ...state.pageNotes, [editingPageNotesId]: { ...notes, [key]: event.target.value } };
+            renderAnnotations();
+            persistState();
+          });
+        }
         $$('[data-cancel-delete]').forEach(button => button.addEventListener("click", () => $("#annotation-delete-dialog").close()));
         $("#annotation-delete-confirm").addEventListener("click", async () => {
           const annotation = annotationById(deletingAnnotationId);
           if (!annotation) return;
           annotation.deleted = true;
           annotation.title = ""; annotation.body = ""; annotation.businessRules = [];
+          delete annotation.sections;
           if (state.activeAnnotationId === annotation.id) closeAnnotation();
           syncAnnotationDefinitions(); renderAnnotations();
           await persistState();
@@ -1845,8 +1938,13 @@
           if (fileHandle && diskRevision < revision) { showToast("写回尚未成功，请检查顶部保存状态"); return; }
           $("#annotation-editor-dialog").close();
         });
-        $("#annotation-editor-dialog").addEventListener("close", () => { flushSave(); editingAnnotationId = ""; });
-        for (const id of ["title", "body", "rules"]) $("#annotation-" + id).addEventListener("input", updateEditedAnnotation);
+        $("#annotation-editor-dialog").addEventListener("close", event => {
+          flushSave();
+          if (event.currentTarget.open) return;
+          editingAnnotationId = "";
+          editingPageNotesId = "";
+        });
+        for (const id of ["title", "body", "rules", ...Object.keys(ANNOTATION_SECTION_LABELS)]) $("#annotation-" + id).addEventListener("input", updateEditedAnnotation);
         $("#annotation-body").addEventListener("paste", event => {
           const id = editingAnnotationId;
           pasteMarkdown(event, $("#annotation-body"), (token, image) => {
@@ -1931,6 +2029,7 @@
           const dot = event.target.closest(".anno-dot");
           if (dot) {
             openAnnotation(dot.dataset.annotationId);
+            revealAnnotationCard(dot.dataset.annotationId);
             return;
           }
           const card = event.target.closest("#annotation-list [data-annotation-id]");
@@ -1949,7 +2048,7 @@
           if (!popover.hidden || state.activeAnnotationId) closeAnnotation();
         });
         document.addEventListener("keydown", event => {
-          if (event.target.closest("button, input, textarea, [contenteditable]")) return;
+          if (event.target.closest("button, input, textarea, a, [contenteditable], .annotation-section-body[tabindex]")) return;
           if (!["Enter", " "].includes(event.key) || !(event.target instanceof Element)) return;
           const card = event.target.closest("#annotation-list [data-annotation-id]");
           if (!card) return;
@@ -1996,6 +2095,8 @@
             console.warn("Visual PRD annotation payload could not be loaded", error);
           }
         }
+        const injectedPageNotes = decodeBase64(PAGE_NOTES_PAYLOAD);
+        if (injectedPageNotes) state.pageNotes = JSON.parse(injectedPageNotes);
         await loadPersistedState();
         const injectedProfile = decodeBase64(UI_PROFILE_PAYLOAD);
         if (injectedProfile) {

@@ -52,6 +52,8 @@ def build_generated(manifest_path: Path, manifest: dict, inputs: dict[str, Path]
         command.extend(["--ui-profile", str(inputs["ui_profile"])])
     if "flows" in inputs:
         command.extend(["--flows", str(inputs["flows"])])
+    if "page_notes" in inputs:
+        command.extend(["--page-notes", str(inputs["page_notes"])])
     run(command)
     annotations = json.loads((output / "annotations.json").read_text(encoding="utf-8"))
     if not isinstance(annotations, list) or not annotations:
@@ -104,6 +106,8 @@ def build_existing(manifest_path: Path, manifest: dict, inputs: dict[str, Path],
     ]
     if "handoff" in inputs:
         build_command.extend(["--handoff", str(inputs["handoff"])])
+    if "page_notes" in inputs:
+        build_command.extend(["--page-notes", str(inputs["page_notes"])])
     if "flows" in inputs:
         copy_if_needed(inputs["flows"], output / "flows.md")
         build_command.extend(["--flows", str(output / "flows.md")])

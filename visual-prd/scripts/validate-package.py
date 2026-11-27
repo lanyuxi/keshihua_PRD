@@ -108,7 +108,7 @@ def validate_frontmatter() -> None:
     require(metadata.get("display_name_en", "").strip('"\'') == "Visual PRD", "English display name is missing")
     require(bool(metadata.get("description_en", "").strip('"\'')), "English description is missing")
     require(metadata.get("icon", "").strip('"\'') == "assets/skill-icon.svg", "metadata.icon is invalid")
-    require(version == "4.2.4", "visual-prd version is not 4.2.4")
+    require(version == "4.2.5", "visual-prd version is not 4.2.5")
     publishing = ("version", "display_name", "display_name_en", "description_zh", "description_en")
     if any(key in fields for key in publishing):
         for key in publishing:

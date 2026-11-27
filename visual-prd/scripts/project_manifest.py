@@ -15,9 +15,9 @@ REQUIRED_INPUTS = {
     "generate": {"product_model"},
 }
 OPTIONAL_INPUTS = {
-    "assemble": {"handoff", "flows"},
-    "enhance": {"handoff", "flows"},
-    "generate": {"ui_profile", "flows"},
+    "assemble": {"handoff", "flows", "page_notes"},
+    "enhance": {"handoff", "flows", "page_notes"},
+    "generate": {"ui_profile", "flows", "page_notes"},
 }
 
 

@@ -5,6 +5,7 @@
   "inputs": {
     "product_model": "product-model.json",
     "ui_profile": "ui-profile.json",
-    "flows": "flows.md"
+    "flows": "flows.md",
+    "page_notes": "page-notes.json"
   }
 }

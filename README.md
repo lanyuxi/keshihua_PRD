@@ -2,14 +2,14 @@
 
 把产品说明、可交互 HTML 原型和页面标注放在同一个离线网页中，支持本地修改、授权后自动写回 HTML，以及导出供前端继续开发的页面。
 
-**当前版本：4.2.4。** 本仓库提供可复用的 `visual-prd` 技能、容器模板、构建脚本和完整演示。流程图使用可读的 **Mermaid Markdown 源码**：编辑节点和连线，预览时自动生成图，并保留配套的流程文字说明。
+**当前版本：4.2.5。** 本仓库提供可复用的 `visual-prd` 技能、容器模板、构建脚本和完整演示。流程图使用可读的 **Mermaid Markdown 源码**：编辑节点和连线，预览时自动生成图，并保留配套的流程文字说明。
 
-4.2.4 以用户提供的 **`visual-prd-aifanche-4.0.2.zip` 原版包为基础**，保留原版三种工作模式、产品模型、界面规范配置器、需求交接、指标定义和评审模式，再加入 2.2.1 的定制能力及说明栏目、流程图查看需求。2.2.1 是新增能力的来源。
+4.2.5 以用户提供的 **`visual-prd-aifanche-4.0.2.zip` 原版包为基础**，保留原版三种工作模式、产品模型、界面规范配置器、需求交接、指标定义和评审模式，再加入 2.2.1 的定制能力及说明栏目、流程图查看需求。2.2.1 是新增能力的来源。
 
-原包文件名及发布元数据标为 4.0.2，包内技能正文标为 4.1.4；这是原包自带的标注差异。4.2.4 是本仓库的增强版本，原包 `_meta.json` 保留原样。兼容复核见 [4.2.4 验证记录](docs/verification-4.2.4.md)。
+原包文件名及发布元数据标为 4.0.2，包内技能正文标为 4.1.4；这是原包自带的标注差异。4.2.5 是本仓库的增强版本，原包 `_meta.json` 保留原样。兼容复核见 [4.2.4 兼容验证](docs/verification-4.2.4.md)。
 
-- [下载 WorkBuddy 专用上传包](dist/visual-prd-4.2.4-workbuddy.zip)（根目录直接包含 SKILL.md，解压后小于 3 MiB）
-- [下载通用技能包（用于本机安装／SkillHub）](dist/visual-prd-4.2.4.zip)
+- [下载 WorkBuddy 专用上传包](dist/visual-prd-4.2.5-workbuddy.zip)（根目录直接包含 SKILL.md，解压后小于 3 MiB）
+- [下载通用技能包（用于本机安装／SkillHub）](dist/visual-prd-4.2.5.zip)
 - [下载离线演示 HTML](examples/visual-prd-demo.html)（下载到本地后用浏览器打开）
 - [查看技能说明](visual-prd/SKILL.md)
 - [查看流程图示例源码](examples/flows.md)
@@ -24,7 +24,7 @@
 | 完整说明栏目 | 产品概述、流程图、功能需求、角色权限、业务规则、待确认与决策、数据与发布；材料缺失时显示待补充 |
 | 标注联动 | 原型圆点和右侧卡片使用同一编号；点击卡片可定位对应标注 |
 | 原型文案编辑 | 中间“编辑”开启后，点击表头、标题、按钮文字、提示等修改；“完成编辑”恢复原交互，修改随 HTML 保存与导出 |
-| 逐条编辑 | 每条标注有编辑按钮，可修改标题、Markdown 正文和业务规则 |
+| 七模块标注 | 右栏按页编辑页面概述、解决问题、权限说明。每个数字标注可编辑交互、流转状态、字段列表和数据排序 |
 | 粘贴图片 | 文档和标注编辑区支持粘贴位图，图片随完整评审 HTML 保存 |
 | 流程图编辑 | 产品概述后有“流程图”章节，使用 Mermaid 源码编辑，离线渲染 SVG |
 | 流程图查看 | 点击图全屏查看，滚轮缩放 25%–800%，支持下载 PNG |
@@ -53,7 +53,7 @@
 1. 下载 [演示 HTML](examples/visual-prd-demo.html)，或克隆仓库。
 2. 用桌面 Chrome 或 Edge 打开 `examples/visual-prd-demo.html`。
 3. 在中间原型点击“查看详情”“任务列表”“新建任务”，体验页面跳转和表单校验。
-4. 点击右侧标注的“编辑”修改文字或粘贴图片。
+4. 点击右侧「页面说明」的编辑按钮修改三项页面信息。点击单条数字标注旁的「编辑」修改交互、流转状态、字段列表和数据排序。字段列表和权限说明支持 Markdown 表格。
 5. 左侧点击“流程图 → 编辑”修改源码和说明，点击“预览”查看结果。
 6. 点击预览中的流程图全屏查看，使用滚轮缩放或“下载图片”保存 PNG。
 7. 点击页面工具栏右侧“编辑”，再点击表头或按钮文字，在就地编辑框修改；点击“完成编辑”恢复原型交互。
@@ -95,18 +95,20 @@ keshihua_PRD/
 │   ├── product-model.json            示例任务看板的业务模型
 │   ├── ui-profile.json               示例界面规范
 │   ├── flows.md                      Mermaid 源码及流程说明
+│   ├── page-notes.json               三项页面说明示例
 │   ├── prototype-source.html         派生的原型源文件
 │   ├── prd.md                        派生的 PRD
 │   ├── annotations.json              派生的标注数据
-│   └── visual-prd-demo.html           已构建的 4.2.4 离线演示
+│   └── visual-prd-demo.html           已构建的 4.2.5 离线演示
 ├── dist/
-│   ├── visual-prd-4.2.4.zip           当前可分发技能包
+│   ├── visual-prd-4.2.5.zip           当前可分发技能包
 │   ├── visual-prd-4.1.7.zip           历史增强版本
 │   ├── visual-prd-4.1.6.zip           历史增强版本
 │   └── visual-prd-2.2.1.zip           历史定制版本
 └── docs/
     ├── screenshots/visual-prd-overview.png  用户指定的唯一截图
-    ├── verification-4.2.4.md          当前发布字段、解压体积与无损验证
+    ├── verification-4.2.5.md          七模块与保存回归
+    ├── verification-4.2.4.md          WorkBuddy 发布字段验证
     ├── verification-4.2.3.md          无损资源与解压体积验证
     ├── verification-4.2.2.md          纯文本上传兼容验证
     ├── verification-4.2.1.md          标注操作与阅读验证
@@ -274,12 +276,12 @@ node visual-prd/scripts/check-interactions.js examples/prototype-source.html
 
 # 按 SKILL.md 中的版本生成分发包
 python3 visual-prd/scripts/package-skill.py \
-  --output dist/visual-prd-4.2.4.zip
+  --output dist/visual-prd-4.2.5.zip
 ```
 
 静态检查通过后，还应在真实浏览器中操作导航、弹层、输入、校验、标注编辑和下载。验证磁盘保存时，检查实际文件并从新路径重开，避免只验证了浏览器草稿。
 
-当前版本的发布字段、解压体积与构建一致性证据见 [当前验证记录](docs/verification-4.2.4.md)。保留原有技能资料与离线依赖，不以删功能、删文档、缩图或减色换取体积。
+当前版本的标注、保存与打包验证见 [当前验证记录](docs/verification-4.2.5.md)。保留原有技能资料与离线依赖，不以删功能、删文档、缩图或减色换取体积。
 
 ## 标注关闭、删除与阅读
 
@@ -307,7 +309,7 @@ python3 visual-prd/scripts/package-skill.py \
 
 打包器同时强制两项限制：**ZIP 小于 3,000,000 字节**，以及 **所有文件的解压后字节总和不超过 3,145,728 字节**。超过任一限制直接报错，不自动丢弃内容。
 
-4.2.4 WorkBuddy 上传包 ZIP 为 **2,287,525 字节**，解压后总量为 **3,141,204 字节**，低于 WorkBuddy 报错中的 3,145,728 字节限制。
+4.2.5 WorkBuddy 上传包 ZIP 为 **2,289,537 字节**，解压后总量为 **3,145,645 字节**，低于 WorkBuddy 报错中的 3,145,728 字节限制。
 
 三项大资源——完整 Mermaid 库、评审容器模板、Logo SVG——用 XZ 与 Base85 无损文本存储，并记录原始字节数和 SHA256。构建器使用 Python 标准库在内存中恢复原文并核对，不联网、不下载依赖、不在技能目录释放额外文件。原 61 项逻辑资源全部保留，加一项读取工具后共 62 个物理文件；图片分辨率、颜色和透明度不变，原作者署名及许可证保留。
 
@@ -317,14 +319,14 @@ python3 visual-prd/scripts/package-skill.py \
 
 WorkBuddy 专用包在 `SKILL.md` 的 YAML frontmatter 顶层提供 `version`、`display_name`、`display_name_en`、`description_zh`、`description_en`。字段由同一份技能元数据派生，不再仅把版本号放在 `metadata` 下；普通包保留通用技能格式，两者正文和功能资源一致。
 
-在网站清空旧上传内容，再选择上方的 **4.2.4 WorkBuddy 专用上传包**。不要上传整个 GitHub 仓库或 source-assets 目录；原文已无损包含在技能的压缩文本资源中。网站单独的“图标”入口仍按其要求选择原图。
+在网站清空旧上传内容，再选择上方的 **4.2.5 WorkBuddy 专用上传包**。不要上传整个 GitHub 仓库或 source-assets 目录；原文已无损包含在技能的压缩文本资源中。网站单独的“图标”入口仍按其要求选择原图。
 
 ```bash
 python3 visual-prd/scripts/package-skill.py --workbuddy \
-  --output dist/visual-prd-4.2.4-workbuddy.zip
+  --output dist/visual-prd-4.2.5-workbuddy.zip
 ```
 
-检查以 ZIP 中每个文件的 file_size 总和为准，不能用 ZIP 文件本身大小代替。完整验证、发布字段校验、从干净上传包构建及负测见 [4.2.4 验证记录](docs/verification-4.2.4.md)。本次未代用户提交网站审核。
+检查以 ZIP 中每个文件的 file_size 总和为准，不能用 ZIP 文件本身大小代替。七模块、发布字段及从干净上传包构建的验证见 [4.2.5 验证记录](docs/verification-4.2.5.md)。本次未代用户提交网站审核。
 
 需要查看容器模板时，在仓库根目录运行：
 
@@ -348,6 +350,8 @@ python3 visual-prd/scripts/resource_io.py assets/container-template.html \
 **可以装入任意第三方网页吗？** 当前容器会读取原型 DOM 以定位标注，只应装入经检查的当前任务原型。信任边界与移植要求见 [安全与可移植性指南](visual-prd/references/security-and-portability.md)。
 
 ## 版本与依赖
+
+4.2.5 新增七模块右栏。页面说明随页面切换，数字圆点对应功能标注，编辑后沿用自动保存和授权写回。
 
 4.2.4 修复 WorkBuddy 缺少五项发布字段的问题：专用包自动补齐顶层版本号、中英文名称和描述，校验器区分顶层字段与 metadata，保留普通技能格式，并按生成后的实际内容检查解压上限。
 
